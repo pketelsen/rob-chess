@@ -1,7 +1,6 @@
 import java.io._
 import java.net._
 
-
 class LineSocket(host: String, port: Int) {
   private val sock = new Socket(host, port)
   private val reader = new BufferedReader(new InputStreamReader(sock.getInputStream()))
@@ -14,7 +13,7 @@ class LineSocket(host: String, port: Int) {
 
   protected def recv(lines: Int): List[String] = lines match {
     case 0 => Nil
-    case _ => reader.readLine() :: recv(lines-1)
+    case _ => reader.readLine() :: recv(lines - 1)
   }
 
   def close() = sock.close()
@@ -53,14 +52,13 @@ class Robot(host: String, port: Int) extends CommandSocket(host, port) {
 }
 
 class Tracking(host: String, port: Int) extends CommandSocket(host, port) {
- val systemInfo: Map[String, String] = (command("CM_GETSYSTEM").split(" ").toList match {
+  val systemInfo: Map[String, String] = (command("CM_GETSYSTEM").split(" ").toList match {
     case "ANS_TRUE" :: tail => {
-      tail.map (
-	_.split("=", 2) match {
-	  case Array(k, v) => (k, v)
-	  case _ => throw new RuntimeException("Protocol initialization failed")
-	}
-      )
+      tail.map(
+        _.split("=", 2) match {
+          case Array(k, v) => (k, v)
+          case _           => throw new RuntimeException("Protocol initialization failed")
+        })
     }
     case _ => throw new RuntimeException("Protocol initialization failed")
   }).toMap
@@ -78,16 +76,16 @@ class Tracking(host: String, port: Int) extends CommandSocket(host, port) {
   def getNextValueMatrixRowwise(): (Double, Boolean, Mat3x4[Float], Float) = {
     command("CM_NEXTVALUE").split(" ").toList match {
       case ts :: v :: rest => {
-	val List(m11, m12, m13, m14,
-		 m21, m22, m23, m24,
-		 m31, m32, m33, m34,
-		 q) = rest.map(_.toFloat)
+        val List(m11, m12, m13, m14,
+          m21, m22, m23, m24,
+          m31, m32, m33, m34,
+          q) = rest.map(_.toFloat)
 
-	return (ts.toDouble, v == "y",
-		((m11, m12, m13, m14),
-		 (m21, m22, m23, m24),
-		 (m31, m32, m33, m34)),
-		q)
+        return (ts.toDouble, v == "y",
+          ((m11, m12, m13, m14),
+            (m21, m22, m23, m24),
+            (m31, m32, m33, m34)),
+            q)
       }
       case _ => throw new RuntimeException("Invalid response")
     }
