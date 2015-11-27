@@ -1,3 +1,10 @@
+
+
+import robot.Robot
+/**
+ * Main for testing purposes.
+ */
+
 object Main {
   def main(args: Array[String]) = {
     val robot = new Robot("localhost", 5005)
