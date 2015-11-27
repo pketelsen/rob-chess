@@ -4,7 +4,7 @@ import scala.collection.mutable.Publisher
 import scala.collection.mutable.Stack
 import controller.Player
 
-class Game(white: Player, black: Player) extends Runnable with Publisher[GameState]{
+class Game(white: Player, black: Player) extends Runnable with Publisher[GameState] {
   /* List of all moves, for resetting the board at the end. */
   val moves: Stack[Move] = Stack()
   var whitesTurn: Boolean = true

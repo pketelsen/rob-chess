@@ -1,9 +1,10 @@
 package controller
+
 import model._
 import controller._
 import gui.GUI
 
-class Application extends Runnable {
+class Application extends {
   //TODO wie kann man die objekte sich gegenseitig kennen lassen,
   //ohne nachträglich die felder zu verändern?
   var game: Game = ???;
@@ -14,10 +15,9 @@ class Application extends Runnable {
   def createGame(whiteName: String, blackName: String, whiteAI: Boolean, blackAI: Boolean) {
     val white: Player = if (whiteAI) new AIPlayer(whiteName) else new HumanPlayer(whiteName, gui.getMove)
     val black: Player = if (blackAI) new AIPlayer(blackName) else new HumanPlayer(blackName, gui.getMove)
-    game = new Game(white,black)
+    game = new Game(white, black)
     game.subscribe(gui)
   }
-  override def run() = {}
 }
 
 object Application {
