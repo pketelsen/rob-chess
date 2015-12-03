@@ -24,7 +24,8 @@ object Application {
   
   def handleEvents(): Unit = {
     eventBus.read match {
-      case StartGameEvent(robot, host, whiteInfo, blackInfo) => {
+      case StartCalibrationEvent(robot, host) => ???
+      case StartGameEvent(whiteInfo, blackInfo) => {
         val white = mkPlayer(whiteInfo, true)
         val black = mkPlayer(blackInfo, false)
         game = Some(new Game(white, black))
