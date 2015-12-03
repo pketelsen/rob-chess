@@ -1,4 +1,4 @@
 package object model {
-  type GameState = Nothing //TODO
-  type Move = Nothing //TODO
+  class GameState //TODO
+  class Move //TODO
 }

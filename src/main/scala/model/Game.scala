@@ -1,27 +1,42 @@
 package model
 
-import scala.collection.mutable.Publisher
-import scala.collection.mutable.Stack
+import scala.collection.mutable.MutableList
 import controller.Player
+import scala.concurrent.Future
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
-class Game(white: Player, black: Player) extends Runnable with Publisher[GameState] {
+class Game(white: Player, black: Player) {
+  type Subscriber = (Move => Future[Unit])
+  val subscribers: MutableList[Subscriber]
+
   /* List of all moves, for resetting the board at the end. */
-  val moves: Stack[Move] = Stack()
-  var whitesTurn: Boolean = true
-  val chessGame: GNUChessWrapper = ???
+  val chessGame: ChessLogic = ???
 
-  override def run() {
-    while (!chessGame.isOver) {
-      moves.push(if (whitesTurn) white.move(chessGame)
-      else black.move(chessGame))
-      whitesTurn = !whitesTurn
-      //TODO allow time for Robot movement
-    }
+  private def publishAndWait(move: Move) = {
+    val futures = subscribers.map(_(move))
+
+    futures.foreach { Await.ready(_, Duration.Inf) }
   }
+
+  def subscribe(sub: Subscriber) = subscribers += sub
+
+  def doTurn(whitesTurn: Boolean): Unit = {
+    val move =
+      if (whitesTurn)
+        white.getMove(chessGame)
+      else
+        black.getMove(chessGame)
+
+    publishAndWait(move)
+
+    doTurn(!whitesTurn);
+  }
+
+  def run() = doTurn(true)
 }
 
-class GNUChessWrapper {
-  //TODO
-  def isOver: Boolean = ???
-  def isValidMove(move: Move): Boolean = ???
+trait ChessLogic {
+  def isValidMove(move: Move): Boolean
+  def suggestMove(): Move
 }

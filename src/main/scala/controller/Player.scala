@@ -1,21 +1,33 @@
 package controller
 
 import model._
+import gui.GUI
 
-abstract class Player(name: String) {
-  def move(chessGame: GNUChessWrapper): Move;
+abstract class Player(white: Boolean) {
+  def getMove(chessLogic: ChessLogic): Move
+
+  def playerString =
+    if (white) "White"
+    else "Black"
 }
 
-class AIPlayer(name: String) extends Player(name) {
-  def move(chessGame: GNUChessWrapper): Move = ???
-  // get move from GNUChessWrapper and return it
-}
-class HumanPlayer(name: String, getMoveFromGui: String => Move) extends Player(name) {
-  def move(chessGame: GNUChessWrapper): Move = {
-    var move: Move = getMoveFromGui("Please enter a move for Player " + name)
-    while (!chessGame.isValidMove(move)) {
-      move = getMoveFromGui("That move was invalid! Please enter a move for Player " + name)
-    }
-    return move
+class AIPlayer(white: Boolean) extends Player(white) {
+  def getMove(chessLogic: ChessLogic): Move = {
+    Application.showMessage("AI is thinking...")
+    chessLogic.suggestMove()
   }
+}
+class HumanPlayer(white: Boolean, gui: GUI) extends Player(white) {
+  private def getMove(chessLogic: ChessLogic, message: String): Move = {
+    Application.showMessage(message)
+    
+    val move = gui.getMove()
+    if (chessLogic.isValidMove(move))
+      return move
+    
+    getMove(chessLogic, "Invalid move! Try again, " + playerString + ".")
+  }
+  
+  def getMove(chessLogic: ChessLogic): Move =
+    getMove(chessLogic, "Make your move, " + playerString + "!")
 }

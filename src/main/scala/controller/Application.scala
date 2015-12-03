@@ -3,28 +3,38 @@ package controller
 import model._
 import controller._
 import gui.GUI
+import scala.concurrent.Channel
 
-class Application extends {
-  //TODO wie kann man die objekte sich gegenseitig kennen lassen,
-  //ohne nachträglich die felder zu verändern?
-  var game: Game = ???;
-  var gui: GUI = ???;
-  def addGUI(gui: GUI) = { this.gui = gui }
-  def connectTracker(host: String, port: Integer) = ???
-  def connectRobot(host: String, port: Integer) = ???
-  def createGame(whiteName: String, blackName: String, whiteAI: Boolean, blackAI: Boolean) {
-    val white: Player = if (whiteAI) new AIPlayer(whiteName) else new HumanPlayer(whiteName, gui.getMove)
-    val black: Player = if (blackAI) new AIPlayer(blackName) else new HumanPlayer(blackName, gui.getMove)
-    game = new Game(white, black)
-    game.subscribe(gui)
-  }
-}
 
 object Application {
-  private def main(args: Array[String]) = {
-    val app = new Application()
-    val gui = new GUI(app)
-    app.addGUI(gui)
-    //...
+  private val eventBus = new Channel[ApplicationEvent]
+  private val gui = new GUI
+  private var game: Option[Game] = None
+  
+
+  private def mkPlayer(info: PlayerInfo, white: Boolean): Player =
+    if (info.ai)
+      new AIPlayer(white)
+    else
+      new HumanPlayer(white, gui)
+  
+  def raiseEvent(event: ApplicationEvent) = eventBus.write(event)
+  
+  def showMessage(message: String) = raiseEvent(MessageEvent(message))
+  
+  def handleEvents(): Unit = {
+    eventBus.read match {
+      case StartGameEvent(robot, host, whiteInfo, blackInfo) => {
+        val white = mkPlayer(whiteInfo, true)
+        val black = mkPlayer(blackInfo, false)
+        game = Some(new Game(white, black))
+      }
+      case MessageEvent(message) => gui.showMessage(message)
+      case QuitEvent => return
+    }
+    
+    handleEvents()
   }
+
+  def main(args: Array[String]) = handleEvents()
 }
