@@ -8,7 +8,7 @@ import scala.concurrent.duration.Duration
 
 class Game(white: Player, black: Player) {
   type Subscriber = (Move => Future[Unit])
-  val subscribers: MutableList[Subscriber]
+  val subscribers = MutableList[Subscriber]()
 
   /* List of all moves, for resetting the board at the end. */
   val chessGame: ChessLogic = ???
