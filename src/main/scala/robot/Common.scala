@@ -2,8 +2,10 @@ package robot
 
 import java.io._
 import java.net._
+import breeze.linalg._
 
 class LineSocket(host: String, port: Int) {
+
   private val sock = new Socket(host, port)
   private val reader = new BufferedReader(new InputStreamReader(sock.getInputStream()))
   private val writer = new BufferedWriter(new OutputStreamWriter(sock.getOutputStream()))
@@ -72,19 +74,18 @@ class Tracking(host: String, port: Int) extends CommandSocket(host, port) {
   def setFormatQuaternions(): Boolean = (command("FORMAT_QUATERNIONS") == "ANS_TRUE")
   def setFormatMatrixRowwise(): Boolean = (command("FORMAT_MATRIXROWWISE") == "ANS_TRUE")
 
-  type Vec4[T] = (T, T, T, T)
-  type Mat3x4[T] = (Vec4[T], Vec4[T], Vec4[T])
+  type Matrix = DenseMatrix[Double]
 
-  def getNextValueMatrixRowwise(): (Double, Boolean, Mat3x4[Float], Float) = {
+  def getNextValueMatrixRowwise(): (Double, Boolean, Matrix, Double) = {
     command("CM_NEXTVALUE").split(" ").toList match {
       case ts :: v :: rest => {
         val List(m11, m12, m13, m14,
           m21, m22, m23, m24,
           m31, m32, m33, m34,
-          q) = rest.map(_.toFloat)
+          q) = rest.map(_.toDouble)
 
         return (ts.toDouble, v == "y",
-          ((m11, m12, m13, m14),
+          DenseMatrix((m11, m12, m13, m14),
             (m21, m22, m23, m24),
             (m31, m32, m33, m34)),
             q)
