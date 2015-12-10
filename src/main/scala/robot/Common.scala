@@ -87,7 +87,8 @@ class Tracking(host: String, port: Int) extends CommandSocket(host, port) {
         return (ts.toDouble, v == "y",
           DenseMatrix((m11, m12, m13, m14),
             (m21, m22, m23, m24),
-            (m31, m32, m33, m34)),
+            (m31, m32, m33, m34),
+            (0.0, 0.0, 0.0, 1.0)),
             q)
       }
       case _ => throw new RuntimeException("Invalid response")
