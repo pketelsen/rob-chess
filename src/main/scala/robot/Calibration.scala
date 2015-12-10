@@ -39,20 +39,20 @@ object Calibration {
     val rotX = w(0 until 9).toDenseMatrix.reshape(3, 3)
     val transX = w(9 until 12).toDenseMatrix.t
 
-    val svd.SVD(uX,_,vX) = svd(rotX)
-    
+    val svd.SVD(uX, _, vX) = svd(rotX)
+
     val rotY = w(12 until 21).toDenseMatrix.reshape(3, 3)
     val transY = w(21 until 24).toDenseMatrix.t
 
-    val svd.SVD(uY,_,vY) = svd(rotY)
-    
+    val svd.SVD(uY, _, vY) = svd(rotY)
+
     val bottom = DenseMatrix((0.0, 0.0, 0.0, 1.0))
 
     val X = DenseMatrix.vertcat(
-      DenseMatrix.horzcat(uX*vX, transX),
+      DenseMatrix.horzcat(uX * vX, transX),
       bottom)
     val Y = DenseMatrix.vertcat(
-      DenseMatrix.horzcat(uY*uY, transY),
+      DenseMatrix.horzcat(uY * uY, transY),
       bottom)
 
     (X, Y)
@@ -87,15 +87,15 @@ object Testdata {
   val measurements: Seq[Measurement] = (ms zip ns) map (x => Measurement(x._1, x._2))
 
   val x = DenseMatrix(
-      (0.09724766, 0.12900532, 0.98718658, 1935.76883024),
-      (0.03666726, 0.98813829, -0.13359038, -103.15758058),
-      (-0.99327412, 0.04905259, 0.09532711, 691.67109678),
-      (0.0, 0.0, 0.0, 1.0));
+    (0.09724766, 0.12900532, 0.98718658, 1935.76883024),
+    (0.03666726, 0.98813829, -0.13359038, -103.15758058),
+    (-0.99327412, 0.04905259, 0.09532711, 691.67109678),
+    (0.0, 0.0, 0.0, 1.0));
   val y = DenseMatrix(
-      (-0.00029431, 0.99813806, -0.03087099, 0.508958942),
-      (0.01635512, -0.03203462, -0.99841412, 26.80600561),
-      (-0.99930823, -0.003427950, -0.01818396, -16.99422957),
-      (0.0, 0.0, 0.0, 1.0));
+    (-0.00029431, 0.99813806, -0.03087099, 0.508958942),
+    (0.01635512, -0.03203462, -0.99841412, 26.80600561),
+    (-0.99930823, -0.003427950, -0.01818396, -16.99422957),
+    (0.0, 0.0, 0.0, 1.0));
 }
 
 object CalibrationTest {
