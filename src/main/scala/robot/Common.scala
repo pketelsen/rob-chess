@@ -2,7 +2,10 @@ package robot
 
 import java.io._
 import java.net._
+
 import breeze.linalg._
+
+import robot.types._
 
 class LineSocket(host: String, port: Int) {
 
@@ -48,11 +51,18 @@ class Robot(host: String, port: Int) extends CommandSocket(host, port) {
   def setVerbosity(value: Int): Boolean =
     (command("SetVerbosity " + value) == "true")
 
-  def movePTPJoints(values: List[Float]): Boolean =
+  def movePTPJoints(values: List[Double]): Boolean =
     (command("MovePTPJoints " + String.join(" ", values.map(_.toString): _*)) == "true")
 
-  def getPositionJoints(): List[Float] =
-    command("GetPositionJoints").split(" ").toList.map(_.toFloat)
+  def getPositionJoints(): List[Double] =
+    command("GetPositionJoints").split(" ").toList.map(_.toDouble)
+
+  def moveMinChangeRowWiseStatus(matrix: Mat, status: Status) {
+    command(List(
+        "MoveMinChangeRowWiseStatus",
+        matToString(matrix),
+        status.toString).mkString(" "))
+  }
 }
 
 class Tracking(host: String, port: Int) extends CommandSocket(host, port) {
@@ -72,11 +82,9 @@ class Tracking(host: String, port: Int) extends CommandSocket(host, port) {
   def chooseTracker(tracker: String): Boolean = (command(tracker) == "ANS_TRUE")
 
   def setFormatQuaternions(): Boolean = (command("FORMAT_QUATERNIONS") == "ANS_TRUE")
-  def setFormatMatrixRowwise(): Boolean = (command("FORMAT_MATRIXROWWISE") == "ANS_TRUE")
+  def setFormatMatrixRowWise(): Boolean = (command("FORMAT_MATRIXROWWISE") == "ANS_TRUE")
 
-  type Matrix = DenseMatrix[Double]
-
-  def getNextValueMatrixRowwise(): (Double, Boolean, Matrix, Double) = {
+  def getNextValueMatrixRowWise(): (Double, Boolean, Mat, Double) = {
     command("CM_NEXTVALUE").split(" ").toList match {
       case ts :: v :: rest => {
         val List(m11, m12, m13, m14,
