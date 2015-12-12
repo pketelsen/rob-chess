@@ -41,15 +41,19 @@ class Robot(host: Host) extends CommandSocket(host) {
   if (command("Hello Robot") != "accepted")
     throw new RuntimeException("Protocol initialization failed")
 
-  def getStatus(): String =
-    command("GetStatus")
-
+  def getStatus(): Status = {
+    val a = command("GetStatus").split(" ")
+    Status(a(0), a(1), a(2))
+  }
   def getRobot(): String =
     command("GetRobot")
 
   def setVerbosity(value: Int): Boolean =
     (command("SetVerbosity " + value) == "true")
 
+  def setSpeed(value: Int): Boolean = {
+    (command("SetAdeptSpeed " + value) == "true")
+  }
   def movePTPJoints(values: List[Double]): Boolean =
     (command("MovePTPJoints " + String.join(" ", values.map(_.toString): _*)) == "true")
 
@@ -81,7 +85,7 @@ class Tracking(host: Host) extends CommandSocket(host) {
 
   def trackers: Array[String] = systemInfo("Tracker").split(";")
 
-  def chooseTracker(tracker: String): Boolean = (command(tracker) == "ANS_TRUE")
+  def chooseMarker(marker: String): Boolean = (command(marker) == "ANS_TRUE")
 
   def setFormatQuaternions(): Boolean = (command("FORMAT_QUATERNIONS") == "ANS_TRUE")
   def setFormatMatrixRowWise(): Boolean = (command("FORMAT_MATRIXROWWISE") == "ANS_TRUE")

@@ -11,7 +11,7 @@ object Main {
 
     println("Status: " + robot.getStatus())
     println("Robot type: " + robot.getRobot())
-    println("Set speed: " + robot.command("SetAdeptSpeed 10"))
+    println("Set speed: " + robot.setSpeed(10))
 
     val r = robot.getPositionJoints()
     println("MovePTPJoints: " + robot.movePTPJoints(r.map(_ - 5)))
