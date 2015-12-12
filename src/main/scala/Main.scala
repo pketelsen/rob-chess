@@ -1,13 +1,13 @@
-
-
+import controller.Host
 import robot.Robot
+
 /**
  * Main for testing purposes.
  */
 
 object Main {
   def main(args: Array[String]) = {
-    val robot = new Robot("localhost", 5005)
+    val robot = new Robot(Host("localhost", 5005))
 
     println("Status: " + robot.getStatus())
     println("Robot type: " + robot.getRobot())

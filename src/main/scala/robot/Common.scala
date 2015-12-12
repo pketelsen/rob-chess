@@ -2,14 +2,13 @@ package robot
 
 import java.io._
 import java.net._
-
 import breeze.linalg._
-
 import robot.types._
+import controller.Host
 
-class LineSocket(host: String, port: Int) {
+class LineSocket(host: Host) {
 
-  private val sock = new Socket(host, port)
+  private val sock = new Socket(host.hostname, host.port)
   private val reader = new BufferedReader(new InputStreamReader(sock.getInputStream()))
   private val writer = new BufferedWriter(new OutputStreamWriter(sock.getOutputStream()))
 
@@ -26,7 +25,7 @@ class LineSocket(host: String, port: Int) {
   def close() = sock.close()
 }
 
-class CommandSocket(host: String, port: Int) extends LineSocket(host, port) {
+class CommandSocket(host: Host) extends LineSocket(host) {
   def command(cmd: String): String = command(cmd, 1) match {
     case List(reply) => reply
   }
@@ -37,7 +36,7 @@ class CommandSocket(host: String, port: Int) extends LineSocket(host, port) {
   }
 }
 
-class Robot(host: String, port: Int) extends CommandSocket(host, port) {
+class Robot(host: Host) extends CommandSocket(host) {
   recv(1) // "welcome to rob6server ..."
   if (command("Hello Robot") != "accepted")
     throw new RuntimeException("Protocol initialization failed")
@@ -68,7 +67,7 @@ class Robot(host: String, port: Int) extends CommandSocket(host, port) {
   }
 }
 
-class Tracking(host: String, port: Int) extends CommandSocket(host, port) {
+class Tracking(host: Host) extends CommandSocket(host) {
   val systemInfo: Map[String, String] = (command("CM_GETSYSTEM").split(" ").toList match {
     case "ANS_TRUE" :: tail => {
       tail.map(

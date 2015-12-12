@@ -12,7 +12,7 @@ case class StartGameEvent(
 
 case class StartCalibrationEvent(
   robot: Host,
-  tracker: Host)
+  tracking: Host)
     extends ApplicationEvent
 
 case class MessageEvent(message: String) extends ApplicationEvent
