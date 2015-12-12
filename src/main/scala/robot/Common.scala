@@ -57,11 +57,14 @@ class Robot(host: String, port: Int) extends CommandSocket(host, port) {
   def getPositionJoints(): List[Double] =
     command("GetPositionJoints").split(" ").toList.map(_.toDouble)
 
+  def getPositionHomRowWise(): Mat = {
+    stringToMat(command("GetPositionHomRowWise"))
+  }
   def moveMinChangeRowWiseStatus(matrix: Mat, status: Status) {
     command(List(
-        "MoveMinChangeRowWiseStatus",
-        matToString(matrix),
-        status.toString).mkString(" "))
+      "MoveMinChangeRowWiseStatus",
+      matToString(matrix),
+      status.toString).mkString(" "))
   }
 }
 
@@ -87,17 +90,10 @@ class Tracking(host: String, port: Int) extends CommandSocket(host, port) {
   def getNextValueMatrixRowWise(): (Double, Boolean, Mat, Double) = {
     command("CM_NEXTVALUE").split(" ").toList match {
       case ts :: v :: rest => {
-        val List(m11, m12, m13, m14,
-          m21, m22, m23, m24,
-          m31, m32, m33, m34,
-          q) = rest.map(_.toDouble)
+        val mat = listToMat(rest.take(12).map(_.toDouble))
+        val q = rest(12).toDouble
 
-        return (ts.toDouble, v == "y",
-          DenseMatrix((m11, m12, m13, m14),
-            (m21, m22, m23, m24),
-            (m31, m32, m33, m34),
-            (0.0, 0.0, 0.0, 1.0)),
-            q)
+        return (ts.toDouble, v == "y", mat, q)
       }
       case _ => throw new RuntimeException("Invalid response")
     }
