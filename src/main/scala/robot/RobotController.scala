@@ -7,8 +7,8 @@ import breeze.linalg._
 
 class RobotController(robHost: Host, trackHost: Host) {
 
-  val robot = new Robot(robHost)
-  val tracking = new Tracking(trackHost)
+  private val robot = new Robot(robHost)
+  private val tracking = new Tracking(trackHost)
 
   robot.setSpeed(10)
 
@@ -33,24 +33,26 @@ class RobotController(robHost: Host, trackHost: Host) {
 object RobotController {
 
   def calibrate(robot: Robot, tracking: Tracking, marker: String): (Mat, Mat) = {
-    var measurements = Seq[Measurement]()
     val numMeasurements = 10
     val homePos = robot.getPositionHomRowWise() //TODO homePos speichern
     val status = robot.getStatus()
     val radius = 20 //TODO choose radius
     tracking.chooseMarker(marker)
-    while (measurements.size < numMeasurements) {
 
+    def measurements(n: Int): Seq[Measurement] = {
+      if (n <= 0) return Seq()
       val t_Robot_Eff = homePos * random(radius)
       robot.moveMinChangeRowWiseStatus(t_Robot_Eff, status)
-
       val (_, visible, t_Track_Marker, q) = tracking.getNextValueMatrixRowWise()
-      //TODO maybe do something with the quality
-      if (visible)
-        measurements = Measurement(t_Robot_Eff, t_Track_Marker) +: measurements
+      //TODO maybe do something with the quality   
+      if (visible) {
+        Measurement(t_Robot_Eff, t_Track_Marker) +: measurements(n - 1)
+      } else {
+        measurements(n)
+      }
     }
 
-    Calibration.calibrate(measurements)
+    Calibration.calibrate(measurements(numMeasurements))
   }
 
   /** Random point and orientation on sphere defined by radius r. */
