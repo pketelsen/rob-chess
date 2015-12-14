@@ -4,7 +4,7 @@ import model._
 import controller._
 import gui.GUI
 import scala.concurrent.Channel
-import robot.RobotController
+import robot._
 
 object Application {
   private val eventBus = new Channel[ApplicationEvent]
@@ -24,8 +24,14 @@ object Application {
 
   def handleEvents(): Unit = {
     eventBus.read match {
-      case StartCalibrationEvent(robot, tracking) =>
-        robotController = Some(new RobotController(robot, tracking))
+      case StartCalibrationEvent(robotHost, trackingHost) => {
+        val robot = new Robot(robotHost)
+        robot.setSpeed(10) //sicherheitshalber
+        val tracking = new Tracking(robotHost)
+        //TODO choose tracker
+        val marker = ???
+        robotController = Some(new RobotController(robot, tracking, marker))
+      }
       case StartGameEvent(whiteInfo, blackInfo) => {
         val white = mkPlayer(whiteInfo, true)
         val black = mkPlayer(blackInfo, false)

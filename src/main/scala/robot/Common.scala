@@ -83,7 +83,7 @@ class Tracking(host: Host) extends CommandSocket(host) {
     case _ => throw new RuntimeException("Protocol initialization failed")
   }).toMap
 
-  def trackers: Array[String] = systemInfo("Tracker").split(";")
+  def markers: Array[String] = systemInfo("Tracker").split(";")
 
   def chooseMarker(marker: String): Boolean = (command(marker) == "ANS_TRUE")
 

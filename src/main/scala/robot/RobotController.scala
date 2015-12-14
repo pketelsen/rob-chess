@@ -5,14 +5,9 @@ import robot.Calibration._
 import robot.types._
 import breeze.linalg._
 
-class RobotController(robHost: Host, trackHost: Host) {
-
-  private val robot = new Robot(robHost)
-  private val tracking = new Tracking(trackHost)
+class RobotController(robot: Robot, tracking: Tracking, marker: String) {
 
   robot.setSpeed(10)
-
-  val marker = ??? //TODO
 
   val (t_Eff_Mark: Mat, t_Rob_Track: Mat) = RobotController.calibrate(robot, tracking, marker)
 
@@ -34,7 +29,7 @@ object RobotController {
 
   def calibrate(robot: Robot, tracking: Tracking, marker: String): (Mat, Mat) = {
     val numMeasurements = 10
-    val homePos = robot.getPositionHomRowWise() //TODO homePos speichern
+    val homePos = robot.getPositionHomRowWise() //TODO determine homePos
     val status = robot.getStatus()
     val radius = 20 //TODO choose radius
     tracking.chooseMarker(marker)
@@ -45,13 +40,13 @@ object RobotController {
       robot.moveMinChangeRowWiseStatus(t_Robot_Eff, status)
       val (_, visible, t_Track_Marker, q) = tracking.getNextValueMatrixRowWise()
       //TODO maybe do something with the quality   
+
       if (visible) {
         Measurement(t_Robot_Eff, t_Track_Marker) +: measurements(n - 1)
       } else {
         measurements(n)
       }
     }
-
     Calibration.calibrate(measurements(numMeasurements))
   }
 
@@ -85,8 +80,6 @@ object RobotController {
       (0.0, 0.0, 1.0))
 
     val rot = DenseMatrix.vertcat(rz * ry * rx, DenseMatrix(0.0, 0.0, 0.0).t)
-
     DenseMatrix.horzcat(rot, t)
-
   }
 }
