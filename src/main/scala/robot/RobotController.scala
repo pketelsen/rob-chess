@@ -36,12 +36,13 @@ object RobotController {
 
     def measurements(n: Int): Seq[Measurement] = {
       if (n <= 0) return Seq()
-      val t_Robot_Eff = homePos * random(radius)
-      robot.moveMinChangeRowWiseStatus(t_Robot_Eff, status)
+
+      val possible = robot.moveMinChangeRowWiseStatus(homePos * random(radius), status)
+      val t_Robot_Eff = robot.getPositionHomRowWise()
       val (_, visible, t_Track_Marker, q) = tracking.getNextValueMatrixRowWise()
       //TODO maybe do something with the quality   
 
-      if (visible) {
+      if (visible && possible) {
         Measurement(t_Robot_Eff, t_Track_Marker) +: measurements(n - 1)
       } else {
         measurements(n)
@@ -52,19 +53,16 @@ object RobotController {
 
   /** Random point and orientation on sphere defined by radius r. */
   def random(r: Double): Mat = {
-    def randTran = r * (Math.random() - .5) * 2
-    def randAng = Math.PI * (Math.random() - .5)
+    def rdTr() = r * (Math.random() - .5) * 2
+    def rdAg() = Math.PI * (Math.random() - .5)
     def c(a: Double): Double = Math.cos(a)
     def s(a: Double): Double = Math.sin(a)
 
-    val x = randTran
-    val y = randTran
-    val z = randTran
-    val t = DenseMatrix(x, y, z, 1.0)
+    val t = DenseMatrix(rdTr(), rdTr(), rdTr(), 1.0)
 
-    val a = randAng
-    val b = randAng
-    val g = randAng
+    val a = rdAg()
+    val b = rdAg()
+    val g = rdAg()
 
     val rx = DenseMatrix(
       (1.0, 0.0, 0.0),

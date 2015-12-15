@@ -63,11 +63,8 @@ class Robot(host: Host) extends CommandSocket(host) {
   def getPositionHomRowWise(): Mat = {
     stringToMat(command("GetPositionHomRowWise"))
   }
-  def moveMinChangeRowWiseStatus(matrix: Mat, status: Status) {
-    command(List(
-      "MoveMinChangeRowWiseStatus",
-      matToString(matrix),
-      status.toString).mkString(" "))
+  def moveMinChangeRowWiseStatus(matrix: Mat, status: Status): Boolean = {
+    (command("MoveMinChangeRowWiseStatus " + matToString(matrix) + " " + status) == "true")
   }
 }
 
