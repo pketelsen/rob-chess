@@ -8,6 +8,7 @@ import breeze.linalg._
 class RobotController(robot: Robot, tracking: Tracking, marker: String) {
 
   robot.setSpeed(10)
+  tracking.setFormatMatrixRowWise()
 
   val (t_Eff_Mark: Mat, t_Rob_Track: Mat) = RobotController.calibrate(robot, tracking, marker)
 
