@@ -4,6 +4,7 @@ import controller.Host
 import robot.Calibration._
 import robot.types._
 import breeze.linalg._
+import java.util.Random
 
 class RobotController(robot: Robot, tracking: Tracking, marker: String) {
 
@@ -54,13 +55,17 @@ object RobotController {
 
   /** Random point and orientation on sphere defined by radius r. */
   def random(r: Double): Mat = {
-    def rdTr() = r * (Math.random() - .5) * 2
+    val rand = new Random();
+
+    val x = rand.nextGaussian()
+    val y = rand.nextGaussian()
+    val z = rand.nextGaussian()
+
+    val t = (r / Math.sqrt(x * x + y * y + z * z)) * DenseMatrix(x, y, z)
+
     def rdAg() = Math.PI * (Math.random() - .5)
     def c(a: Double): Double = Math.cos(a)
     def s(a: Double): Double = Math.sin(a)
-
-    val t = DenseMatrix(rdTr(), rdTr(), rdTr(), 1.0)
-
     val a = rdAg()
     val b = rdAg()
     val g = rdAg()
@@ -78,7 +83,8 @@ object RobotController {
       (s(g), c(g), 0.0),
       (0.0, 0.0, 1.0))
 
-    val rot = DenseMatrix.vertcat(rz * ry * rx, DenseMatrix(0.0, 0.0, 0.0).t)
-    DenseMatrix.horzcat(rot, t)
+    val hom = DenseMatrix.horzcat(rz * ry * rx, t)
+    DenseMatrix.vertcat(hom, DenseMatrix(0.0, 0.0, 0.0, 1.0).t)
+
   }
 }
