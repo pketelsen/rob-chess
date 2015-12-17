@@ -52,7 +52,7 @@ object Calibration {
       DenseMatrix.horzcat(uX * vX, transX),
       bottom)
     val Y = DenseMatrix.vertcat(
-      DenseMatrix.horzcat(uY * uY, transY),
+      DenseMatrix.horzcat(uY * vY, transY),
       bottom)
 
     (X, Y)

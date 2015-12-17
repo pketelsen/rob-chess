@@ -30,7 +30,7 @@ object Application {
         val tracking = new Tracking(robotHost)
         //TODO choose tracker
         val marker = ???
-        robotController = Some(new RobotController(robot, tracking, marker))
+        robotController = Some(new RobotController(robot, tracking))
       }
       case StartGameEvent(whiteInfo, blackInfo) => {
         val white = mkPlayer(whiteInfo, true)
