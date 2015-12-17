@@ -6,22 +6,29 @@ import scala.concurrent.Future
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
+class GameState
+class Move
+
+trait GameSubscriber {
+  def handle(move: Move): Future[Unit]
+}
+
 class Game(white: Player, black: Player) {
-  type Subscriber = (Move => Future[Unit])
-  val subscribers = MutableList[Subscriber]()
+
+  val subscribers = MutableList[GameSubscriber]()
 
   /* List of all moves, for resetting the board at the end. */
   val chessGame: ChessLogic = ???
 
   private def publishAndWait(move: Move) = {
-    val futures = subscribers.map(_(move))
+    val futures = subscribers.map(_.handle(move))
 
     futures.foreach { Await.ready(_, Duration.Inf) }
   }
 
-  def subscribe(sub: Subscriber) = subscribers += sub
+  def subscribe(sub: GameSubscriber) = subscribers += sub
 
-  def doTurn(whitesTurn: Boolean): Unit = {
+  private def doTurn(whitesTurn: Boolean): Unit = {
     val move =
       if (whitesTurn)
         white.getMove(chessGame)

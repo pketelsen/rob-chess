@@ -1,13 +1,15 @@
 package robot
 
-import controller.Host
-import robot.Calibration._
-import robot.types._
-import breeze.linalg._
 import java.util.Random
-import scala.annotation.tailrec
+import breeze.linalg.DenseMatrix
+import breeze.linalg.InjectNumericOps
+import model.Game
+import robot.types.Mat
+import model.GameSubscriber
+import model.Move
+import scala.concurrent.Future
 
-class RobotController(robot: Robot, tracking: Tracking) {
+class RobotController(robot: Robot, tracking: Tracking) extends GameSubscriber {
   robot.setSpeed(10)
   robot.command("SetAdeptFine 50")
 
@@ -82,6 +84,8 @@ class RobotController(robot: Robot, tracking: Tracking) {
 
     Calibration.calibrate(measurements(numMeasurements))
   }
+  
+  def handle(move: Move): Future[Unit] = Future.successful(())
 }
 
 object RobotController {
