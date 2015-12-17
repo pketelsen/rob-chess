@@ -8,6 +8,7 @@ import robot.types.Mat
 import model.GameSubscriber
 import model.Move
 import scala.concurrent.Future
+import scala.annotation.tailrec
 
 class RobotController(robot: Robot, tracking: Tracking) extends GameSubscriber {
   robot.setSpeed(10)
@@ -39,16 +40,14 @@ class RobotController(robot: Robot, tracking: Tracking) extends GameSubscriber {
     val status = robot.getStatus()
     val radius = 150
 
-    def measurements(n: Int, l: List[Measurement] = List()): List[Measurement] = {
-      if (n <= 0) return l
-
+    def measurement(): Option[Measurement] = {
       val t1 = System.currentTimeMillis()
       println("starting to move...")
       val possible = robot.moveMinChangeRowWiseStatus(homePos * RobotController.random(radius), status)
 
       if (!possible) {
         println("Movement impossible")
-        return measurements(n, l)
+        return None
       }
 
       val t2 = (System.currentTimeMillis() - t1) / 1000.0
@@ -74,17 +73,31 @@ class RobotController(robot: Robot, tracking: Tracking) extends GameSubscriber {
 
       if (count < 90) {
         println("marker not visible")
-        return measurements(n, l)
+        return None
       }
 
-      println("visible measurement. quality: " + q/count)
-      println(s"$n to go")
-      measurements(n - 1, Measurement(t_Robot_Eff, t_Track_Marker :/ count) :: l)
+      println("visible measurement. quality: " + q / count)
+      Some(Measurement(t_Robot_Eff, t_Track_Marker :/ count))
     }
 
-    Calibration.calibrate(measurements(numMeasurements))
+    @tailrec
+    def measurements(l: List[Measurement] = List()): List[Measurement] = {
+      if (l.length >= numMeasurements)
+        return l
+
+      measurement() match {
+        case Some(m) =>
+          println(s"${numMeasurements - l.length} to go")
+          measurements(m :: l)
+
+        case None =>
+          measurements(l)
+      }
+    }
+
+    Calibration.calibrate(measurements())
   }
-  
+
   def handle(move: Move): Future[Unit] = Future.successful(())
 }
 
