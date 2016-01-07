@@ -14,7 +14,6 @@ object Application {
   private case class StateCalibrated(robotController: RobotController) extends State
   private case class StateRunning(robotController: RobotController, game: Game) extends State
 
-  private val marker = "PolarisActive_1"
 
   private val eventBus = new Channel[ApplicationEvent]
   private val gui = new GUI
@@ -25,20 +24,15 @@ object Application {
     else
       new HumanPlayer(white, gui)
 
-  def raiseEvent(event: ApplicationEvent) = eventBus.write(event)
+  def queueEvent(event: ApplicationEvent) = eventBus.write(event)
 
-  def showMessage(message: String) = raiseEvent(MessageEvent(message))
+  def showMessage(message: String) = queueEvent(MessageEvent(message))
 
   @tailrec
   def handleEvents(state: State): Unit = {
     (state, eventBus.read) match {
       case (StateStart(), StartCalibrationEvent(robotHost, trackingHost)) =>
-        val robot = new Robot(robotHost)
-        val tracking = new Tracking(robotHost)
-
-        robot.setSpeed(10)
-
-        val robotController = new RobotController(robot, tracking)
+        val robotController = new RobotController(robotHost, trackingHost)
 
         handleEvents(StateCalibrated(robotController))
 

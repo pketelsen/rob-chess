@@ -66,6 +66,14 @@ class Robot(host: Host) extends CommandSocket(host) {
   def moveMinChangeRowWiseStatus(matrix: Mat, status: Status): Boolean = {
     (command("MoveMinChangeRowWiseStatus " + matToString(matrix) + " " + status) == "true")
   }
+
+  def gripperGoHome: Boolean = {
+    command("GripperGoHome", 3)(2) == "true"
+  }
+
+  def gripperMoveToPosition(pos: Double): Boolean = {
+    command("GripperMoveToPosition " + pos, 3)(2) == "true"
+  }
 }
 
 class Tracking(host: Host) extends CommandSocket(host) {
@@ -97,5 +105,14 @@ class Tracking(host: Host) extends CommandSocket(host) {
       }
       case _ => throw new RuntimeException("Invalid response")
     }
+  }
+}
+
+object Tracking {
+  def apply(host: Host, marker: String): Tracking = {
+    val tracking = new Tracking(host)
+    tracking.chooseMarker(marker)
+    tracking.setFormatMatrixRowWise()
+    return tracking
   }
 }

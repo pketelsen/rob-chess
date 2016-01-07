@@ -8,14 +8,32 @@ import robot.types.Mat
 import model.GameSubscriber
 import model.Move
 import scala.concurrent.Future
+import controller.Host
 
-class RobotController(robot: Robot, tracking: Tracking) extends GameSubscriber {
-  robot.setSpeed(10)
+class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscriber {
+  private val markerEffector = "Gripper_29012015"
+  private val markerChessboard = "Chessboard"
+  private val homePos = List(5.606552, -49.14139, 86.9076, 13.33459, 32.99462, -148.7874)
+
+  val t_Eff_Mark = DenseMatrix((0.3638659886373817, 0.4200696539172075, 0.8313501236968803, 2285.3600652953446),
+    (-0.14022391123549183, 0.9070640300818531, -0.3969535237902405, -923.8465175435686),
+    (-0.9208359229693214, 0.027862720426141574, 0.3889535599267515, 789.2420371276054),
+    (0.0, 0.0, 0.0, 1.0))
+  val t_Rob_Track = DenseMatrix((0.776766016036591, -0.6295755011617276, 0.016408676595092264, -6.640952861466634),
+    (0.01750470614808647, -0.0044616384649865184, -0.9998368262095954, -91.6379379125317),
+    (0.6295459805235131, 0.7769264972435732, 0.007554885010426726, -122.25921477273421),
+    (0.0, 0.0, 0.0, 1.0))
+
+  val robot = new Robot(robotHost)
+  val trackingEffector = Tracking(trackingHost, markerEffector)
+  val trackingChessboard = Tracking(trackingHost, markerChessboard)
+
+  robot.setSpeed(13)
   robot.command("SetAdeptFine 50")
+  robot.movePTPJoints(homePos)
+  robot.gripperGoHome
 
-  tracking.setFormatMatrixRowWise()
-
-  val (t_Eff_Mark, t_Rob_Track): (Mat, Mat) = calibrate()
+  //val (t_Eff_Mark, t_Rob_Track): (Mat, Mat) = calibrate()
 
   println(t_Eff_Mark.toString)
   println(t_Rob_Track.toString)
@@ -35,7 +53,7 @@ class RobotController(robot: Robot, tracking: Tracking) extends GameSubscriber {
 
   def calibrate(): (Mat, Mat) = {
     val numMeasurements = 10
-    val homePos = robot.getPositionHomRowWise()
+    val base = robot.getPositionHomRowWise()
     val status = robot.getStatus()
     val radius = 150
 
@@ -44,7 +62,7 @@ class RobotController(robot: Robot, tracking: Tracking) extends GameSubscriber {
 
       val t1 = System.currentTimeMillis()
       println("starting to move...")
-      val possible = robot.moveMinChangeRowWiseStatus(homePos * RobotController.random(radius), status)
+      val possible = robot.moveMinChangeRowWiseStatus(base * RobotController.random(radius), status)
 
       if (!possible) {
         println("Movement impossible")
@@ -63,7 +81,7 @@ class RobotController(robot: Robot, tracking: Tracking) extends GameSubscriber {
       val t_Robot_Eff = robot.getPositionHomRowWise()
 
       val (t_Track_Marker, q, count) = (1 to 100)
-        .map(_ => tracking.getNextValueMatrixRowWise())
+        .map(_ => trackingEffector.getNextValueMatrixRowWise())
         .foldLeft((DenseMatrix.zeros[Double](4, 4), 0.0, 0.0))(Function.untupled {
           case ((accMat, accQ, accN), (_, visible, t_Track_Marker, q)) =>
             if (visible && q < 0.5)
@@ -77,15 +95,16 @@ class RobotController(robot: Robot, tracking: Tracking) extends GameSubscriber {
         return measurements(n, l)
       }
 
-      println("visible measurement. quality: " + q/count)
-      println(s"$n to go")
+      println("visible measurement. quality: " + q / count)
+      println(s"${n - 1} to go")
       measurements(n - 1, Measurement(t_Robot_Eff, t_Track_Marker :/ count) :: l)
     }
 
     Calibration.calibrate(measurements(numMeasurements))
   }
-  
+
   def handle(move: Move): Future[Unit] = Future.successful(())
+
 }
 
 object RobotController {
