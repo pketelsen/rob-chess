@@ -4,40 +4,49 @@ import java.util.Random
 import breeze.linalg.DenseMatrix
 import breeze.linalg.InjectNumericOps
 import model.Game
-import robot.types.Mat
+import robot.types._
 import model.GameSubscriber
 import model.Move
 import scala.concurrent.Future
 import controller.Host
 import scala.annotation.tailrec
+import breeze.linalg.inv
 
 class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscriber {
   private val markerEffector = "Gripper_29012015"
+  //private val markerEffector = "NDITool3"
   private val markerChessboard = "Chessboard"
   private val homePos = List(5.606552, -49.14139, 86.9076, 13.33459, 32.99462, -148.7874)
 
-  val t_Eff_Mark = DenseMatrix((0.3638659886373817, 0.4200696539172075, 0.8313501236968803, 2285.3600652953446),
-    (-0.14022391123549183, 0.9070640300818531, -0.3969535237902405, -923.8465175435686),
-    (-0.9208359229693214, 0.027862720426141574, 0.3889535599267515, 789.2420371276054),
-    (0.0, 0.0, 0.0, 1.0))
-  val t_Rob_Track = DenseMatrix((0.776766016036591, -0.6295755011617276, 0.016408676595092264, -6.640952861466634),
-    (0.01750470614808647, -0.0044616384649865184, -0.9998368262095954, -91.6379379125317),
-    (0.6295459805235131, 0.7769264972435732, 0.007554885010426726, -122.25921477273421),
-    (0.0, 0.0, 0.0, 1.0))
+  val t_Rob_Track = stringToMat("0.35228960972760986 0.3413153801671908 0.87143321151956 2363.359747339102 -0.1822804786470481 0.9383186586416051 -0.2938229431974666 -814.7526334382933 -0.9179683316880661 -0.0553344929166667 0.39277504491946014 806.7438669255289")
+  val t_Eff_Mark = stringToMat("0.7756495053701288 -0.6310951382898147 0.00931510848221041 -7.356517905207702 0.014244645408630241 0.00274875194604135 -0.9998947616824094 -92.12209093535157 0.6310031179766532 0.7757005677384151 0.011121794551381015 -122.69712610862004")
 
   val robot = new Robot(robotHost)
   val trackingEffector = Tracking(trackingHost, markerEffector)
   val trackingChessboard = Tracking(trackingHost, markerChessboard)
 
-  robot.setSpeed(13)
+  robot.setSpeed(8)
   robot.command("SetAdeptFine 50")
-  robot.movePTPJoints(homePos)
-  robot.gripperGoHome
+  //robot.movePTPJoints(homePos)
+  //robot.gripperGoHome
 
-  //val (t_Eff_Mark, t_Rob_Track): (Mat, Mat) = calibrate()
+  //val (t_Rob_Track, t_Eff_Mark): (Mat, Mat) = calibrate()
 
-  println(t_Eff_Mark.toString)
-  println(t_Rob_Track.toString)
+  println(matToString(t_Rob_Track))
+  println(matToString(t_Eff_Mark))
+
+  val t_Track_Board = measureTracker(trackingChessboard) match {
+    case Some(m) => m
+    case None    => throw new RuntimeException("Chessboard not visible")
+  }
+
+  val t_Rob_Board = t_Rob_Track * t_Track_Board
+  val t_Board_Rob = inv(t_Rob_Board)
+  println(t_Board_Rob)
+
+  println(robot.getPositionHomRowWise())
+  println(t_Board_Rob * robot.getPositionHomRowWise())
+  moveToBoardPosition(0, 7, 30)
 
   /*def getMarkerPosInRobCoord(marker: String): Option[Mat] = {
     if (!tracking.chooseMarker(marker)) {
@@ -51,6 +60,41 @@ class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscribe
       None
     }
   }*/
+
+  def moveToBoardPosition(file: Int, rank: Int, height: Double) {
+    val (dx, dy, dz) = (35, 30, -210)
+    val (sx, sy, sz) = (56.5, 56.5, -1.0)
+
+    val (x, y, z) = (dx + sx * rank, dy + sy * file, dz + sz * height)
+    val m = DenseMatrix(
+      (-1.0, 0.0, 0.0, x),
+      (0.0, 1.0, 0.0, y),
+      (0.0, 0.0, -1.0, z),
+      (0.0, 0.0, 0.0, 1.0))
+
+    println(t_Rob_Board * m)
+    println(robot.moveMinChangeRowWiseStatus(t_Rob_Board * m, robot.getStatus()))
+  }
+
+  def measureTracker(tracking: Tracking): Option[Mat] = {
+    val (mat, q, count) = (1 to 100)
+      .map(_ => tracking.getNextValueMatrixRowWise())
+      .foldLeft((DenseMatrix.zeros[Double](4, 4), 0.0, 0))(Function.untupled {
+        case ((accMat, accQ, accN), (_, visible, t_Track_Marker, q)) =>
+          if (visible && q < 1)
+            (accMat + t_Track_Marker, accQ + q, accN + 1)
+          else
+            (accMat, accQ, accN)
+      })
+
+    if (count < 90) {
+      println(s"marker not visible ($count)")
+      return None
+    }
+
+    println("visible measurement. quality: " + q / count)
+    Some(mat :/ count.toDouble)
+  }
 
   def calibrate(): (Mat, Mat) = {
     val numMeasurements = 10
@@ -79,24 +123,8 @@ class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscribe
 
       val t_Robot_Eff = robot.getPositionHomRowWise()
 
-      val (t_Track_Marker, q, count) = (1 to 100)
-        .map(_ => trackingEffector.getNextValueMatrixRowWise())
-        .foldLeft((DenseMatrix.zeros[Double](4, 4), 0.0, 0.0))(Function.untupled {
-          case ((accMat, accQ, accN), (_, visible, t_Track_Marker, q)) =>
-            if (visible && q < 0.5)
-              (accMat + t_Track_Marker, accQ + q, accN + 1)
-            else
-              (accMat, accQ, accN)
-        })
-
-      if (count < 90) {
-        println("marker not visible")
-        return None
-      }
-
-      println("visible measurement. quality: " + q / count)
-      println(s"${n - 1} to go")
-      Some(Measurement(t_Robot_Eff, t_Track_Marker :/ count))
+      measureTracker(trackingEffector).map(t_Track_Marker =>
+        Measurement(t_Robot_Eff, t_Track_Marker))
     }
 
     @tailrec
@@ -106,7 +134,7 @@ class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscribe
 
       measurement() match {
         case Some(m) =>
-          println(s"${numMeasurements - l.length} to go")
+          println(s"${numMeasurements - (1 + l.length)} to go")
           measurements(m :: l)
 
         case None =>
