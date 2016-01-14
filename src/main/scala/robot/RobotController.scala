@@ -21,14 +21,15 @@ class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscribe
   //private val markerEffector = "NDITool3"
   private val markerChessboard = "Chessboard"
   private val homePos = List(5.606552, -49.14139, 86.9076, 13.33459, 32.99462, -148.7874)
+  private val gripperHomePos = 32.5
+  private val baseHeight = 150
 
   val robot = new Robot(robotHost)
   val trackingEffector = Tracking(trackingHost, markerEffector)
   val trackingChessboard = Tracking(trackingHost, markerChessboard)
 
-  robot.setSpeed(10)
+  robot.setSpeed(15)
   robot.command("SetAdeptFine 50")
-  robot.gripperMoveToPosition(0.0025)
 
   val (t_Rob_Track, t_Eff_Mark): (Mat, Mat) = getCalibration(false)
   
@@ -45,7 +46,20 @@ class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscribe
 
   println(robot.getPositionHomRowWise())
   println(t_Board_Rob * robot.getPositionHomRowWise())
-  moveToBoardPosition(3, 0, 5)
+  robot.gripperMoveToPosition(gripperHomePos)
+  //moveToBoardPosition(7, 7, 0)
+  
+  val testObject = piece.Knight
+
+  //testPiece(3, 3, testObject)
+
+  movePiece(3, 3, 0, 0, testObject)
+  movePiece(0, 0, 0, 7, testObject)
+  movePiece(0, 7, 7, 7, testObject)
+  movePiece(7, 7, 7, 0, testObject)
+  movePiece(7, 0, 3, 3, testObject)
+  
+  
 
   /*def getMarkerPosInRobCoord(marker: String): Option[Mat] = {
     if (!tracking.chooseMarker(marker)) {
@@ -59,14 +73,39 @@ class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscribe
       None
     }
   }*/
-
+  
+  def movePiece(fromFile: Int, fromRank: Int, toFile: Int, toRank: Int, p: piece.Piece) {
+    liftPiece(fromFile, fromRank, p)
+    putPiece(toFile, toRank, p)
+  }
+  
+  def liftPiece(file: Int, rank: Int, p: piece.Piece) {
+    liftOrPutPiece(file, rank, p.gripHeight, p.gripWidth)
+  }
+  
+  def putPiece(file: Int, rank: Int, p: piece.Piece) {
+    liftOrPutPiece(file, rank, p.gripHeight + 1, gripperHomePos)
+  }
+  
+  def liftOrPutPiece(file: Int, rank: Int, height: Double, width: Double) {
+    moveToBoardPosition(file, rank, baseHeight)
+    moveToBoardPosition(file, rank, height)
+    robot.gripperMoveToPosition(width)
+    moveToBoardPosition(file, rank, baseHeight)
+  }
+  
+  def testPiece(file: Int, rank: Int, p: piece.Piece) {
+    moveToBoardPosition(file, rank, p.gripHeight)
+    robot.gripperMoveToPosition(p.gripWidth)
+  }
+  
   def moveToBoardPosition(file: Int, rank: Int, height: Double) {
     val (dx, dy, dz) = (24, 20.5, -234)
     val (sx, sy, sz) = (57.25, 57.25, -1.0)
     
     def c(a: Double): Double = Math.cos(a / 180.0 * Math.PI)
     def s(a: Double): Double = Math.sin(a / 180.0 * Math.PI)
-    val corr_ax = 2
+    val corr_ax = 2.1
     val corr_ay = -5
     val corr_az = 3.1
     val corr = rot.y(corr_ay) * rot.x(corr_ax) * rot.z(corr_az)

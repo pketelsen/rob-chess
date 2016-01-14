@@ -72,7 +72,9 @@ class Robot(host: Host) extends CommandSocket(host) {
   }
 
   def gripperMoveToPosition(pos: Double): Boolean = {
-    command("GripperMoveToPosition " + pos, 3)(2) == "true"
+    println("GripperMoveToPosition %.4f".formatLocal(java.util.Locale.US, pos/1000))
+    // Divide by 1000 (gripper expects meters, everything else uses millimeters)
+    command("GripperMoveToPosition %.4f".formatLocal(java.util.Locale.US, pos/1000), 3)(2) == "true"
   }
 }
 
