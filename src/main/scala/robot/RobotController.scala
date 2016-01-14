@@ -11,29 +11,28 @@ import scala.concurrent.Future
 import controller.Host
 import scala.annotation.tailrec
 import breeze.linalg.inv
+import java.io.BufferedWriter
+import java.io.File
+import java.io.FileWriter
+import scala.io.Source
 
 class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscriber {
-  private val markerEffector = "Gripper_29012015"
+  private val markerEffector = "Gripper_14012016"
   //private val markerEffector = "NDITool3"
   private val markerChessboard = "Chessboard"
   private val homePos = List(5.606552, -49.14139, 86.9076, 13.33459, 32.99462, -148.7874)
-
-  val t_Rob_Track = stringToMat("0.35228960972760986 0.3413153801671908 0.87143321151956 2363.359747339102 -0.1822804786470481 0.9383186586416051 -0.2938229431974666 -814.7526334382933 -0.9179683316880661 -0.0553344929166667 0.39277504491946014 806.7438669255289")
-  val t_Eff_Mark = stringToMat("0.7756495053701288 -0.6310951382898147 0.00931510848221041 -7.356517905207702 0.014244645408630241 0.00274875194604135 -0.9998947616824094 -92.12209093535157 0.6310031179766532 0.7757005677384151 0.011121794551381015 -122.69712610862004")
 
   val robot = new Robot(robotHost)
   val trackingEffector = Tracking(trackingHost, markerEffector)
   val trackingChessboard = Tracking(trackingHost, markerChessboard)
 
-  robot.setSpeed(8)
+  robot.setSpeed(10)
   robot.command("SetAdeptFine 50")
+  robot.gripperMoveToPosition(0.0025)
+
+  val (t_Rob_Track, t_Eff_Mark): (Mat, Mat) = getCalibration(false)
+  
   //robot.movePTPJoints(homePos)
-  //robot.gripperGoHome
-
-  //val (t_Rob_Track, t_Eff_Mark): (Mat, Mat) = calibrate()
-
-  println(matToString(t_Rob_Track))
-  println(matToString(t_Eff_Mark))
 
   val t_Track_Board = measureTracker(trackingChessboard) match {
     case Some(m) => m
@@ -46,7 +45,7 @@ class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscribe
 
   println(robot.getPositionHomRowWise())
   println(t_Board_Rob * robot.getPositionHomRowWise())
-  moveToBoardPosition(0, 7, 30)
+  moveToBoardPosition(3, 0, 5)
 
   /*def getMarkerPosInRobCoord(marker: String): Option[Mat] = {
     if (!tracking.chooseMarker(marker)) {
@@ -62,8 +61,15 @@ class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscribe
   }*/
 
   def moveToBoardPosition(file: Int, rank: Int, height: Double) {
-    val (dx, dy, dz) = (35, 30, -210)
-    val (sx, sy, sz) = (56.5, 56.5, -1.0)
+    val (dx, dy, dz) = (24, 20.5, -234)
+    val (sx, sy, sz) = (57.25, 57.25, -1.0)
+    
+    def c(a: Double): Double = Math.cos(a / 180.0 * Math.PI)
+    def s(a: Double): Double = Math.sin(a / 180.0 * Math.PI)
+    val corr_ax = 2
+    val corr_ay = -5
+    val corr_az = 3.1
+    val corr = rot.y(corr_ay) * rot.x(corr_ax) * rot.z(corr_az)
 
     val (x, y, z) = (dx + sx * rank, dy + sy * file, dz + sz * height)
     val m = DenseMatrix(
@@ -73,7 +79,7 @@ class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscribe
       (0.0, 0.0, 0.0, 1.0))
 
     println(t_Rob_Board * m)
-    println(robot.moveMinChangeRowWiseStatus(t_Rob_Board * m, robot.getStatus()))
+    println(robot.moveMinChangeRowWiseStatus(t_Rob_Board * corr * m, robot.getStatus()))
   }
 
   def measureTracker(tracking: Tracking): Option[Mat] = {
@@ -81,7 +87,7 @@ class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscribe
       .map(_ => tracking.getNextValueMatrixRowWise())
       .foldLeft((DenseMatrix.zeros[Double](4, 4), 0.0, 0))(Function.untupled {
         case ((accMat, accQ, accN), (_, visible, t_Track_Marker, q)) =>
-          if (visible && q < 1)
+          if (visible && q < 0.6)
             (accMat + t_Track_Marker, accQ + q, accN + 1)
           else
             (accMat, accQ, accN)
@@ -95,6 +101,30 @@ class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscribe
     println("visible measurement. quality: " + q / count)
     Some(mat :/ count.toDouble)
   }
+
+  def getCalibration(calibrateAnew: Boolean) =
+    if (calibrateAnew) {
+      robot.movePTPJoints(homePos)
+      robot.gripperGoHome
+      val (t_RT, t_EM) = calibrate()
+
+      println(matToString(t_RT))
+      println(matToString(t_EM))
+
+      val file = new File("calibration.txt")
+      val bw = new BufferedWriter(new FileWriter(file))
+      bw.write(matToString(t_RT))
+      bw.newLine()
+      bw.write(matToString(t_EM))
+      bw.close()
+
+      (t_RT, t_EM)
+    } else {
+      val in = Source.fromFile("calibration.txt").getLines().toIndexedSeq
+      val t_RT = stringToMat(in(0))
+      val t_EM = stringToMat(in(0))
+      (t_RT, t_EM)
+    }
 
   def calibrate(): (Mat, Mat) = {
     val numMeasurements = 10
