@@ -2,22 +2,44 @@ package controller.logic
 
 import model.Move
 import scala.annotation.tailrec
+import controller.Player
+import controller.Application
+import model.NormalMove
+import model.BoardPos
+import model.Piece
+import model.King
+import model.Bishop
+import model.Rook
+import model.Knight
+import model.Queen
+import model.PromotionMove
+import scala.concurrent.Channel
+import scala.collection.mutable.Queue
 
 /**
- * The Cess Engine Communication Protocol used by gnuchess, crafty, ...
+ * The Chess Engine Communication Protocol used by gnuchess, crafty, ...
  */
-class CECP {
+abstract class CECP(val name: String) {
   var nextPing: Int = 0
 
   val proc = Process(Seq("gnuchess", "--xboard"))
-  println("GNUChess initialized: " + proc.readLine())
   writeLine("xboard")
   writeLine("protover 2")
 
   // TODO handle feature flags
 
-  def readLine(): String = proc.readLine()
-  def writeLine(line: String): Unit = proc.writeLine(line)
+  /** Handles asynchronous output of the CECP engine */
+  protected def handleLine(line: String): Unit
+
+  protected def readLine(): String = {
+    val line = proc.readLine()
+    handleLine(line)
+    println(s"Input from $name: $line")
+    line
+  }
+
+  protected def writeLine(line: String): Unit =
+    proc.writeLine(line)
 
   private def getNextPing(): Int = {
     val p = nextPing
@@ -26,38 +48,143 @@ class CECP {
   }
 
   @tailrec
-  private def doWait(cb: String => Unit, p: Int): Unit = {
-    val s = readLine()
-    if (s != s"pong $p") {
-      cb(s)
-      doWait(cb, p)
+  protected final def await[A](cb: String => Option[A]): A = {
+    val line = readLine()
+    cb(line) match {
+      case Some(ret) => ret
+      case None => await(cb)
     }
   }
 
-  def wait(cb: String => Unit): Unit = {
+  protected def sync(cb: String => Unit): Unit = {
     val p = getNextPing()
     writeLine(s"ping $p")
-    doWait(cb, p)
+
+    await { line =>
+      if (line != s"pong $p") {
+        cb(line)
+        None
+      } else
+        Some(())
+    }
   }
 
   def destroy(): Unit = proc.destroy()
-}
-
-class CECPLogic extends CECP with ChessLogic {
-  val patternInvalidMove = "^Invalid move: ".r
-
-  writeLine("force")
 
   def attemptMove(move: Move): Boolean = {
     writeLine(move.toString)
 
     var valid = true
 
-    wait { line =>
-      if (patternInvalidMove.findFirstMatchIn(line).isDefined)
+    sync { line =>
+      if (CECP.patternInvalidMove.findFirstIn(line).isDefined)
         valid = false
     }
 
+    sync { _ => }
+
     valid
+  }
+}
+
+object CECP {
+  // TODO Clean up and move to Move.unapply, ... methods
+  def file(v: String): Int =
+    v match {
+      case "a" => 0
+      case "b" => 1
+      case "c" => 2
+      case "d" => 3
+      case "e" => 4
+      case "f" => 5
+      case "g" => 6
+      case "h" => 7
+    }
+
+  def rank(v: String): Int =
+    v match {
+      case "1" => 0
+      case "2" => 1
+      case "3" => 2
+      case "4" => 3
+      case "5" => 4
+      case "6" => 5
+      case "7" => 6
+      case "8" => 7
+    }
+
+  def piece(v: String): Piece =
+    v match {
+      case "r" => Rook
+      case "n" => Knight
+      case "b" => Bishop
+      case "k" => King
+      case "q" => Queen
+    }
+
+  val patternInvalidMove = """(?i)^(?:illegal|invalid) move""".r
+  val patternAIMove = """(?i)^(?:move|my move is :) (\S+)$""".r
+
+  val patternNormalMove = """^(.)(.)(.)(.)$""".r
+  val patternPromotionMove = """^(.)(.)(.)(.)(.)$""".r
+}
+
+class CECPLogic extends CECP("logic") with ChessLogic {
+  writeLine("force")
+
+  // TODO Handle game end 
+  protected def handleLine(line: String): Unit = ()
+}
+
+class CECPPlayer(val white: Boolean) extends CECP(if (white) "white" else "black") with Player {
+  val moves = Queue[Move]()
+
+  if (white)
+    writeLine("go")
+
+  def opponentMove(move: Move): Unit = {
+    if (!attemptMove(move))
+      throw new RuntimeException("CECP AI player rejected valid move")
+  }
+
+  private def parseMove(input: String): Move = {
+    input.toLowerCase match {
+      case CECP.patternNormalMove(srcFile, srcRank, destFile, destRank) =>
+        NormalMove(
+          BoardPos(CECP.file(srcFile), CECP.rank(srcRank)),
+          BoardPos(CECP.file(destFile), CECP.rank(destRank)))
+      case CECP.patternPromotionMove(srcFile, srcRank, destFile, destRank, piece) =>
+        PromotionMove(
+          BoardPos(CECP.file(srcFile), CECP.rank(srcRank)),
+          BoardPos(CECP.file(destFile), CECP.rank(destRank)),
+          CECP.piece(piece))
+    }
+  }
+
+  protected def handleLine(line: String): Unit = {
+    line match {
+      case CECP.patternAIMove(m) =>
+        moves += parseMove(m)
+      case _ =>
+    }
+  }
+
+  @tailrec
+  private def waitForMove(): Move = {
+    if (moves.isEmpty) {
+      readLine()
+      waitForMove()
+    } else {
+      moves.dequeue()
+    }
+  }
+
+  def getMove(wasInvalid: Boolean): Move = {
+    if (wasInvalid)
+      throw new RuntimeException("Engine rejected CECP AI player move")
+
+    Application.showMessage("AI is thinking...")
+
+    waitForMove()
   }
 }

@@ -5,6 +5,11 @@ import gui.GUI
 import scala.concurrent.Channel
 import robot._
 import scala.annotation.tailrec
+import controller.logic.CECP
+import controller.logic.CECPLogic
+import model.BoardPos
+import model.NormalMove
+import controller.logic.CECPPlayer
 
 object Application {
   private trait State
@@ -13,13 +18,12 @@ object Application {
   private case class StateCalibrated(robotController: RobotController) extends State
   private case class StateRunning(robotController: RobotController, game: Game) extends State
 
-
   private val eventBus = new Channel[ApplicationEvent]
   private val gui = new GUI
 
   private def mkPlayer(info: PlayerInfo, white: Boolean): Player =
     if (info.ai)
-      new AIPlayer(white)
+      new CECPPlayer(white)
     else
       new HumanPlayer(white, gui)
 
@@ -31,7 +35,7 @@ object Application {
   def handleEvents(state: State): Unit = {
     (state, eventBus.read) match {
       case (StateStart(), StartCalibrationEvent(robotHost, trackingHost)) =>
-        val robotController = new RobotController(robotHost, trackingHost)
+        val robotController = null // new RobotController(robotHost, trackingHost)
 
         handleEvents(StateCalibrated(robotController))
 
@@ -42,7 +46,9 @@ object Application {
         val game = new Game(white, black)
 
         game.subscribe(gui)
-        game.subscribe(robotController)
+        //game.subscribe(robotController)
+
+        game.run()
 
         handleEvents(StateRunning(robotController, game))
 
@@ -50,9 +56,13 @@ object Application {
         gui.showMessage(message)
         handleEvents(state)
 
+      case (StateRunning(_, game), QuitEvent) =>
+        game.logic.destroy()
+        return
+
       case (_, QuitEvent) =>
         return
-        
+
       case (_, event) =>
         println(s"Unexpected event ${event} in state ${state}")
         handleEvents(state)
