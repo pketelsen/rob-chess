@@ -19,7 +19,7 @@ import scala.io.Source
 class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscriber {
   private val markerEffector = "Gripper_21012016"
   private val markerChessboard = "Chessboard"
-  private val homePos = List(5.606552, -49.14139, 86.9076, 13.33459, 32.99462, -148.7874)
+  private val homePos = List(8.188339, -72.18192, 85.697, 0.085899, 74.57073, -174.2732)
   private val gripperHomePos = 32.5
   private val baseHeight = 150
 
@@ -30,7 +30,7 @@ class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscribe
   robot.setSpeed(10)
   robot.command("SetAdeptFine 50")
 
-  val (t_Rob_Track, t_Eff_Mark): (Mat, Mat) = getCalibration(true)
+  val (t_Rob_Track, t_Eff_Mark): (Mat, Mat) = getCalibration(false)
 
   //robot.movePTPJoints(homePos)
 
@@ -46,6 +46,7 @@ class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscribe
   println(robot.getPositionHomRowWise())
   println(t_Board_Rob * robot.getPositionHomRowWise())
   robot.gripperMoveToPosition(gripperHomePos)
+
   //  moveToBoardPosition(7, 7, 0)
 
   //  val testObject = piece.King
