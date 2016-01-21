@@ -20,9 +20,9 @@ class AIPlayer(white: Boolean) extends Player(white) {
 class HumanPlayer(white: Boolean, gui: GUI) extends Player(white) {
   def getMove(wasInvalid: Boolean): Move = {
     if (wasInvalid)
-      Application.showMessage(s"Invalid move! Try again, `playerString`.")
+      Application.showMessage(s"Invalid move! Try again, $playerString.")
     else
-      Application.showMessage(s"Make your move, `playerString`.")
+      Application.showMessage(s"Make your move, $playerString.")
 
     gui.getMove()
   }
