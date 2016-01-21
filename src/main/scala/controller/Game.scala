@@ -1,13 +1,12 @@
-package model
+package controller
 
 import scala.collection.mutable.MutableList
-import controller.Player
 import scala.concurrent.Future
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import scala.annotation.tailrec
+import model._
 
-class GameState
-class Move
 
 trait GameSubscriber {
   def handle(move: Move): Future[Unit]
@@ -28,13 +27,19 @@ class Game(white: Player, black: Player) {
 
   def subscribe(sub: GameSubscriber) = subscribers += sub
 
-  private def doTurn(whitesTurn: Boolean): Unit = {
-    val move =
-      if (whitesTurn)
-        white.getMove(chessGame)
-      else
-        black.getMove(chessGame)
+  @tailrec
+  private def makeTurn(player: Player, wasInvalid: Boolean = false): Move = {
+    val move = player.getMove(wasInvalid)
 
+    if (chessGame.attemptMove(move))
+      move
+    else
+      makeTurn(player, true)
+  }
+
+  @tailrec
+  private def doTurn(whitesTurn: Boolean): Unit = {
+    val move = makeTurn(if (whitesTurn) white else black)
     publishAndWait(move)
 
     doTurn(!whitesTurn);
@@ -44,6 +49,5 @@ class Game(white: Player, black: Player) {
 }
 
 trait ChessLogic {
-  def isValidMove(move: Move): Boolean
-  def suggestMove(): Move
+  def attemptMove(move: Move): Boolean
 }

@@ -1,6 +1,5 @@
 package controller
 
-import model._
 import controller._
 import gui.GUI
 import scala.concurrent.Channel

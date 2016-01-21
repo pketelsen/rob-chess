@@ -3,9 +3,9 @@ package robot
 import java.util.Random
 import breeze.linalg.DenseMatrix
 import breeze.linalg.InjectNumericOps
-import model.Game
+import controller.Game
 import robot.types._
-import model.GameSubscriber
+import controller.GameSubscriber
 import model.Move
 import scala.concurrent.Future
 import controller.Host

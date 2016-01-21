@@ -1,8 +1,8 @@
 package gui
 
 import model.Move
-import model.Game
-import model.GameSubscriber
+import controller.Game
+import controller.GameSubscriber
 import scala.concurrent.Future
 import controller.StartCalibrationEvent
 import controller.Application
