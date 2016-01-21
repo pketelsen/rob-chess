@@ -10,12 +10,12 @@ case object King extends Piece
 case object Queen extends Piece
 
 
-sealed class Move
+sealed abstract class Move
 
 case class BoardPos(file: Int, rank: Int)
 
-case class NormalMove(src: BoardPos, dest: BoardPos)
-case class PromotionMove(src: BoardPos, dest: BoardPos, promotion: Piece)
+case class NormalMove(src: BoardPos, dest: BoardPos) extends Move
+case class PromotionMove(src: BoardPos, dest: BoardPos, promotion: Piece) extends Move
 
 
 case class GameState(moves: Seq[Move])
