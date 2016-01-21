@@ -17,8 +17,7 @@ import java.io.FileWriter
 import scala.io.Source
 
 class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscriber {
-  private val markerEffector = "Gripper_14012016"
-  //private val markerEffector = "NDITool3"
+  private val markerEffector = "Gripper_21012016"
   private val markerChessboard = "Chessboard"
   private val homePos = List(5.606552, -49.14139, 86.9076, 13.33459, 32.99462, -148.7874)
   private val gripperHomePos = 32.5
@@ -28,11 +27,11 @@ class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscribe
   val trackingEffector = Tracking(trackingHost, markerEffector)
   val trackingChessboard = Tracking(trackingHost, markerChessboard)
 
-  robot.setSpeed(15)
+  robot.setSpeed(10)
   robot.command("SetAdeptFine 50")
 
-  val (t_Rob_Track, t_Eff_Mark): (Mat, Mat) = getCalibration(false)
-  
+  val (t_Rob_Track, t_Eff_Mark): (Mat, Mat) = getCalibration(true)
+
   //robot.movePTPJoints(homePos)
 
   val t_Track_Board = measureTracker(trackingChessboard) match {
@@ -47,62 +46,51 @@ class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscribe
   println(robot.getPositionHomRowWise())
   println(t_Board_Rob * robot.getPositionHomRowWise())
   robot.gripperMoveToPosition(gripperHomePos)
-  //moveToBoardPosition(7, 7, 0)
-  
-  val testObject = piece.Knight
+  //  moveToBoardPosition(7, 7, 0)
 
-  //testPiece(3, 3, testObject)
+  //  val testObject = piece.King
 
-  movePiece(3, 3, 0, 0, testObject)
-  movePiece(0, 0, 0, 7, testObject)
-  movePiece(0, 7, 7, 7, testObject)
-  movePiece(7, 7, 7, 0, testObject)
-  movePiece(7, 0, 3, 3, testObject)
-  
-  
+  //  testPiece(3, 3, testObject)
 
-  /*def getMarkerPosInRobCoord(marker: String): Option[Mat] = {
-    if (!tracking.chooseMarker(marker)) {
-      throw new RuntimeException("Marker not available.")
-    }
-    val (_, visible, t_Track_Marker, q) = tracking.getNextValueMatrixRowWise()
+  //  movePiece(3, 3, 0, 0, testObject)
+  //  movePiece(0, 0, 0, 7, testObject)
+  //  movePiece(0, 7, 7, 7, testObject)
+  //  movePiece(7, 7, 7, 0, testObject)
+  //  movePiece(7, 0, 3, 3, testObject)
 
-    if (visible) {
-      Some(t_Rob_Track * t_Track_Marker)
-    } else {
-      None
-    }
-  }*/
-  
+  /**
+   * Will try to move a piece between the specified fields, and assume the piece is a p.
+   *  Will not throw an error or otherwise warn, if supplied info is wrong.
+   */
   def movePiece(fromFile: Int, fromRank: Int, toFile: Int, toRank: Int, p: piece.Piece) {
     liftPiece(fromFile, fromRank, p)
     putPiece(toFile, toRank, p)
   }
-  
-  def liftPiece(file: Int, rank: Int, p: piece.Piece) {
+
+  private def liftPiece(file: Int, rank: Int, p: piece.Piece) {
     liftOrPutPiece(file, rank, p.gripHeight, p.gripWidth)
   }
-  
-  def putPiece(file: Int, rank: Int, p: piece.Piece) {
+
+  private def putPiece(file: Int, rank: Int, p: piece.Piece) {
     liftOrPutPiece(file, rank, p.gripHeight + 1, gripperHomePos)
   }
-  
-  def liftOrPutPiece(file: Int, rank: Int, height: Double, width: Double) {
+
+  private def liftOrPutPiece(file: Int, rank: Int, height: Double, width: Double) {
     moveToBoardPosition(file, rank, baseHeight)
     moveToBoardPosition(file, rank, height)
     robot.gripperMoveToPosition(width)
     moveToBoardPosition(file, rank, baseHeight)
   }
-  
-  def testPiece(file: Int, rank: Int, p: piece.Piece) {
+
+  private def testPiece(file: Int, rank: Int, p: piece.Piece) {
     moveToBoardPosition(file, rank, p.gripHeight)
     robot.gripperMoveToPosition(p.gripWidth)
   }
-  
-  def moveToBoardPosition(file: Int, rank: Int, height: Double) {
+
+  private def moveToBoardPosition(file: Int, rank: Int, height: Double) {
     val (dx, dy, dz) = (24, 20.5, -234)
     val (sx, sy, sz) = (57.25, 57.25, -1.0)
-    
+
     def c(a: Double): Double = Math.cos(a / 180.0 * Math.PI)
     def s(a: Double): Double = Math.sin(a / 180.0 * Math.PI)
     val corr_ax = 2.1
@@ -121,7 +109,7 @@ class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscribe
     println(robot.moveMinChangeRowWiseStatus(t_Rob_Board * corr * m, robot.getStatus()))
   }
 
-  def measureTracker(tracking: Tracking): Option[Mat] = {
+  private def measureTracker(tracking: Tracking): Option[Mat] = {
     val (mat, q, count) = (1 to 100)
       .map(_ => tracking.getNextValueMatrixRowWise())
       .foldLeft((DenseMatrix.zeros[Double](4, 4), 0.0, 0))(Function.untupled {
@@ -141,7 +129,7 @@ class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscribe
     Some(mat :/ count.toDouble)
   }
 
-  def getCalibration(calibrateAnew: Boolean) =
+  private def getCalibration(calibrateAnew: Boolean) =
     if (calibrateAnew) {
       robot.movePTPJoints(homePos)
       robot.gripperGoHome
@@ -165,7 +153,7 @@ class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscribe
       (t_RT, t_EM)
     }
 
-  def calibrate(): (Mat, Mat) = {
+  private def calibrate(): (Mat, Mat) = {
     val numMeasurements = 10
     val base = robot.getPositionHomRowWise()
     val status = robot.getStatus()

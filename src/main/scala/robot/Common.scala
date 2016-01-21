@@ -30,9 +30,13 @@ class CommandSocket(host: Host) extends LineSocket(host) {
     case List(reply) => reply
   }
 
+  private val debugging = false;
   def command(cmd: String, replyLines: Int): List[String] = {
+    if (debugging) println("sending: " + cmd)
     send(cmd)
-    return recv(replyLines)
+    val ans = recv(replyLines)
+    if (debugging) println("recieved: " + ans)
+    return ans
   }
 }
 
@@ -72,9 +76,9 @@ class Robot(host: Host) extends CommandSocket(host) {
   }
 
   def gripperMoveToPosition(pos: Double): Boolean = {
-    println("GripperMoveToPosition %.4f".formatLocal(java.util.Locale.US, pos/1000))
+    println("GripperMoveToPosition %.4f".formatLocal(java.util.Locale.US, pos / 1000))
     // Divide by 1000 (gripper expects meters, everything else uses millimeters)
-    command("GripperMoveToPosition %.4f".formatLocal(java.util.Locale.US, pos/1000), 3)(2) == "true"
+    command("GripperMoveToPosition %.4f".formatLocal(java.util.Locale.US, pos / 1000), 3)(2) == "true"
   }
 }
 
