@@ -9,6 +9,7 @@ import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.OutputStreamWriter
 import java.io.InputStreamReader
+import scala.concurrent.Channel
 
 class Process(proc: ScalaProcess, stdin: BufferedWriter, stdout: BufferedReader) {
   def destroy(): Unit = {
@@ -18,21 +19,27 @@ class Process(proc: ScalaProcess, stdin: BufferedWriter, stdout: BufferedReader)
   }
 
   def readLine(): String = stdout.readLine()
-  def writeLine(line: String): Unit = stdin.write(line + "\n")
+  def writeLine(line: String): Unit = {
+    stdin.write(line + "\n")
+    stdin.flush()
+  }
 }
 
 object Process {
   def apply(p: ProcessBuilder): Process = {
-    var stdin: Option[OutputStream] = None;
-    var stdout: Option[InputStream] = None;
+    val stdinChannel = new Channel[OutputStream];
+    val stdoutChannel = new Channel[InputStream];
 
     val proc = p.run(new ProcessIO(
-      { v => stdin = Some(v) },
-      { v => stdout = Some(v) },
+      { stdinChannel write _ },
+      { stdoutChannel write _ },
       _.close()))
 
+    val stdin = stdinChannel.read
+    val stdout = stdoutChannel.read
+
     new Process(proc,
-      new BufferedWriter(new OutputStreamWriter(stdin.get)),
-      new BufferedReader(new InputStreamReader(stdout.get)))
+      new BufferedWriter(new OutputStreamWriter(stdin)),
+      new BufferedReader(new InputStreamReader(stdout)))
   }
 }
