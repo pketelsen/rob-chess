@@ -1,11 +1,13 @@
 package controller
 
-import scala.collection.mutable.MutableList
-import scala.concurrent.Future
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 import scala.annotation.tailrec
-import model._
+import scala.collection.mutable.MutableList
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration.Duration
+
+import model.Move
+import logic._
 
 
 trait GameSubscriber {
@@ -46,8 +48,4 @@ class Game(white: Player, black: Player) {
   }
 
   def run() = doTurn(true)
-}
-
-trait ChessLogic {
-  def attemptMove(move: Move): Boolean
 }
