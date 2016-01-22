@@ -15,10 +15,13 @@ abstract trait Player {
       "White"
     else
       "Black"
+
+  def destroy(): Unit
 }
 
 class HumanPlayer(val white: Boolean, gui: GUI) extends Player {
   def opponentMove(move: Move): Unit = ()
+  def destroy(): Unit = ()
 
   def getMove(wasInvalid: Boolean): Move = {
     if (wasInvalid)

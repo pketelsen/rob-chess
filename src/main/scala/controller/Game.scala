@@ -14,12 +14,11 @@ trait GameSubscriber {
 }
 
 class Game(white: Player, black: Player) {
-  val subscribers = MutableList[GameSubscriber]()
+  private val subscribers = MutableList[GameSubscriber]()
 
-  var whitesTurn = true
+  private var whitesTurn = true
 
-  /* List of all moves, for resetting the board at the end. */
-  val logic: ChessLogic = new CECPLogic
+  private val logic: ChessLogic = new CECPLogic
 
   private def publishAndWait(move: Move) = {
     val futures = subscribers.map(_.handle(move))
@@ -52,5 +51,11 @@ class Game(white: Player, black: Player) {
     publishAndWait(move)
 
     whitesTurn = !whitesTurn
+  }
+
+  def destroy(): Unit = {
+    white.destroy()
+    black.destroy()
+    logic.destroy()
   }
 }

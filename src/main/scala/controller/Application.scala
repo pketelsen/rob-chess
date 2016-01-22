@@ -58,7 +58,7 @@ object Application {
         Some(state)
 
       case (StateRunning(_, game), QuitEvent) =>
-        game.logic.destroy()
+        game.destroy()
         None
 
       case (_, QuitEvent) =>
