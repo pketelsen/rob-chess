@@ -31,13 +31,12 @@ object Application {
 
   def showMessage(message: String) = queueEvent(MessageEvent(message))
 
-  @tailrec
-  def handleEvents(state: State): Unit = {
-    (state, eventBus.read) match {
+  private def handleEvent(state: State, event: ApplicationEvent): Option[State] = {
+    (state, event) match {
       case (StateStart(), StartCalibrationEvent(robotHost, trackingHost)) =>
         val robotController = null // new RobotController(robotHost, trackingHost)
 
-        handleEvents(StateCalibrated(robotController))
+        Some(StateCalibrated(robotController))
 
       case (StateCalibrated(robotController), StartGameEvent(whiteInfo, blackInfo)) =>
         val white = mkPlayer(whiteInfo, true)
@@ -50,22 +49,33 @@ object Application {
 
         game.run()
 
-        handleEvents(StateRunning(robotController, game))
+        Some(StateRunning(robotController, game))
 
       case (_, MessageEvent(message)) =>
         gui.showMessage(message)
-        handleEvents(state)
+        Some(state)
 
       case (StateRunning(_, game), QuitEvent) =>
         game.logic.destroy()
-        return
+        None
 
       case (_, QuitEvent) =>
-        return
+        None
 
       case (_, event) =>
         println(s"Unexpected event ${event} in state ${state}")
-        handleEvents(state)
+        Some(state)
+    }
+  }
+
+  @tailrec
+  def handleEvents(state: State): Unit = {
+    handleEvent(state, eventBus.read) match {
+      case Some(newState) =>
+        handleEvents(newState)
+
+      case None =>
+      // Quit
     }
   }
 
