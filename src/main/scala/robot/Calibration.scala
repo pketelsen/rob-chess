@@ -99,7 +99,7 @@ object Testdata {
 }
 
 object CalibrationTest {
-  def main(args: Array[String]): Unit = {
+  def test(): Unit = {
     val (x, y) = Calibration.calibrate(Testdata.measurements)
     println(x)
     println
