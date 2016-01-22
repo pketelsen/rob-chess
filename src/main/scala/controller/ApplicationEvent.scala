@@ -10,11 +10,11 @@ case class StartGameEvent(
   blackInfo: PlayerInfo)
     extends ApplicationEvent
 
+object NextTurnEvent extends ApplicationEvent
+
 case class StartCalibrationEvent(
   robot: Host,
   tracking: Host)
     extends ApplicationEvent
-
-case class MessageEvent(message: String) extends ApplicationEvent
 
 object QuitEvent extends ApplicationEvent

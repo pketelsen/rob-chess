@@ -29,7 +29,7 @@ object Application {
 
   def queueEvent(event: ApplicationEvent) = eventBus.write(event)
 
-  def showMessage(message: String) = queueEvent(MessageEvent(message))
+  def showMessage(message: String) = gui.showMessage(message)
 
   private def handleEvent(state: State, event: ApplicationEvent): Option[State] = {
     (state, event) match {
@@ -47,12 +47,14 @@ object Application {
         game.subscribe(gui)
         //game.subscribe(robotController)
 
-        game.run()
+        queueEvent(NextTurnEvent)
 
         Some(StateRunning(robotController, game))
 
-      case (_, MessageEvent(message)) =>
-        gui.showMessage(message)
+      case (StateRunning(robotController, game), NextTurnEvent) =>
+        game.run()
+        queueEvent(NextTurnEvent)
+
         Some(state)
 
       case (StateRunning(_, game), QuitEvent) =>

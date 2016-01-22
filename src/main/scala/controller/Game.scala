@@ -14,8 +14,9 @@ trait GameSubscriber {
 }
 
 class Game(white: Player, black: Player) {
-
   val subscribers = MutableList[GameSubscriber]()
+
+  var whitesTurn = true
 
   /* List of all moves, for resetting the board at the end. */
   val logic: ChessLogic = new CECPLogic
@@ -38,8 +39,7 @@ class Game(white: Player, black: Player) {
       makeTurn(player, true)
   }
 
-  @tailrec
-  private def doTurn(whitesTurn: Boolean): Unit = {
+  def run(): Unit = {
     val (player, opponent) =
       if (whitesTurn)
         (white, black)
@@ -51,8 +51,6 @@ class Game(white: Player, black: Player) {
     opponent.opponentMove(move)
     publishAndWait(move)
 
-    doTurn(!whitesTurn);
+    whitesTurn = !whitesTurn
   }
-
-  def run() = doTurn(true)
 }

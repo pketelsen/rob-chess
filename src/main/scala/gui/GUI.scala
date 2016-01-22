@@ -30,5 +30,4 @@ class GUI extends GameSubscriber {
 
   Application.queueEvent(StartCalibrationEvent(robotHost, trackingHost))
   Application.queueEvent(StartGameEvent(PlayerInfo(true), PlayerInfo(true)))
-  Application.queueEvent(QuitEvent)
 }
