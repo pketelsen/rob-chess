@@ -64,31 +64,31 @@ class RobotController(robotHost: Host, trackingHost: Host) {
    *  Will not throw an error or otherwise warn, if supplied info is wrong.
    */
   def movePiece(fromFile: Int, fromRank: Int, toFile: Int, toRank: Int, p: piece.Piece) {
-    liftPiece(fromFile, fromRank, p)
-    putPiece(toFile, toRank, p)
+    liftPiece(boardPosition(fromFile, fromRank), p)
+    putPiece(boardPosition(toFile, toRank), p)
   }
 
-  private def liftPiece(file: Int, rank: Int, p: piece.Piece) {
-    liftOrPutPiece(file, rank, p.gripHeight, p.gripWidth)
+  private def liftPiece(pos: (Double => Mat), p: piece.Piece) {
+    liftOrPutPiece(pos, p.gripHeight, p.gripWidth)
   }
 
-  private def putPiece(file: Int, rank: Int, p: piece.Piece) {
-    liftOrPutPiece(file, rank, p.gripHeight + 1, gripperHomePos)
+  private def putPiece(pos: (Double => Mat), p: piece.Piece) {
+    liftOrPutPiece(pos, p.gripHeight + 1, gripperHomePos)
   }
 
-  private def liftOrPutPiece(file: Int, rank: Int, height: Double, width: Double) {
-    moveToBoardPosition(file, rank, baseHeight)
-    moveToBoardPosition(file, rank, height)
+  private def liftOrPutPiece(pos: (Double => Mat), height: Double, width: Double) {
+    moveToPosition(pos(baseHeight))
+    moveToPosition(pos(height))
     robot.gripperMoveToPosition(width)
-    moveToBoardPosition(file, rank, baseHeight)
+    moveToPosition(pos(baseHeight))
   }
 
   private def testPiece(file: Int, rank: Int, p: piece.Piece) {
-    moveToBoardPosition(file, rank, p.gripHeight)
+    moveToPosition(boardPosition(file, rank)(p.gripHeight))
     robot.gripperMoveToPosition(p.gripWidth)
   }
 
-  private def moveToBoardPosition(file: Int, rank: Int, height: Double) {
+  private def boardPosition(rank: Int, file: Int)(height: Double): Mat = {
     val (dx, dy, dz) = (24, 20.5, -234)
     val (sx, sy, sz) = (57.25, 57.25, -1.0)
 
@@ -106,8 +106,12 @@ class RobotController(robotHost: Host, trackingHost: Host) {
       (0.0, 0.0, -1.0, z),
       (0.0, 0.0, 0.0, 1.0))
 
-    println(t_Rob_Board * m)
-    println(robot.moveMinChangeRowWiseStatus(t_Rob_Board * corr * m, robot.getStatus()))
+    t_Rob_Board * corr * m
+  }
+
+  private def moveToPosition(position: Mat) {
+    print("moving: ")
+    println(robot.moveMinChangeRowWiseStatus(position, robot.getStatus()))
   }
 
   private def measureTracker(tracking: Tracking): Option[Mat] = {
