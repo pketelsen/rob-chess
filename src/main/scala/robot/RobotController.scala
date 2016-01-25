@@ -16,31 +16,31 @@ import java.io.File
 import java.io.FileWriter
 import scala.io.Source
 
-class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscriber {
+class RobotController(robotHost: Host, trackingHost: Host) {
   private val markerEffector = "Gripper_21012016"
   private val markerChessboard = "Chessboard"
   private val homePos = List(8.188339, -72.18192, 85.697, 0.085899, 74.57073, -174.2732)
   private val gripperHomePos = 32.5
   private val baseHeight = 150
 
-  val robot = new Robot(robotHost)
-  val trackingEffector = Tracking(trackingHost, markerEffector)
-  val trackingChessboard = Tracking(trackingHost, markerChessboard)
+  private val robot = new Robot(robotHost)
+  private val trackingEffector = Tracking(trackingHost, markerEffector)
+  private val trackingChessboard = Tracking(trackingHost, markerChessboard)
 
   robot.setSpeed(10)
   robot.command("SetAdeptFine 50")
 
-  val (t_Rob_Track, t_Eff_Mark): (Mat, Mat) = getCalibration(false)
+  private val (t_Rob_Track, t_Eff_Mark): (Mat, Mat) = getCalibration(false)
 
   //robot.movePTPJoints(homePos)
 
-  val t_Track_Board = measureTracker(trackingChessboard) match {
+  private val t_Track_Board = measureTracker(trackingChessboard) match {
     case Some(m) => m
     case None    => throw new RuntimeException("Chessboard not visible")
   }
 
-  val t_Rob_Board = t_Rob_Track * t_Track_Board
-  val t_Board_Rob = inv(t_Rob_Board)
+  private val t_Rob_Board = t_Rob_Track * t_Track_Board
+  private val t_Board_Rob = inv(t_Rob_Board)
   println(t_Board_Rob)
 
   println(robot.getPositionHomRowWise())
@@ -202,9 +202,6 @@ class RobotController(robotHost: Host, trackingHost: Host) extends GameSubscribe
 
     Calibration.calibrate(measurements())
   }
-
-  def handle(move: Move): Future[Unit] = Future.successful(())
-
 }
 
 object RobotController {

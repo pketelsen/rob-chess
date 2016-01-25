@@ -1,6 +1,6 @@
 package robot.piece
 
-abstract class Piece {
+sealed abstract class Piece {
   def gripHeight: Double
   def gripWidth: Double
 }

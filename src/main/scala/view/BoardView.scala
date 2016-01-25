@@ -74,6 +74,7 @@ trait BoardView extends GameSubscriber {
         board(dest) = Some(piece, color)
     }
   }
+  /** This method has to be implemented by non abstract subclasses. */
   def handleActions(l: List[Action]): Future[Unit]
 }
 
