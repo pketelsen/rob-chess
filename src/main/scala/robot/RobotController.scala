@@ -15,6 +15,9 @@ import java.io.BufferedWriter
 import java.io.File
 import java.io.FileWriter
 import scala.io.Source
+import breeze.linalg.rank
+import view._
+import model.BoardPos
 
 class RobotController(robotHost: Host, trackingHost: Host) {
   private val markerEffector = "Gripper_21012016"
@@ -59,13 +62,9 @@ class RobotController(robotHost: Host, trackingHost: Host) {
   //  movePiece(7, 7, 7, 0, testObject)
   //  movePiece(7, 0, 3, 3, testObject)
 
-  /**
-   * Will try to move a piece between the specified fields, and assume the piece is a p.
-   *  Will not throw an error or otherwise warn, if supplied info is wrong.
-   */
-  def movePiece(fromFile: Int, fromRank: Int, toFile: Int, toRank: Int, p: piece.Piece) {
-    liftPiece(boardPosition(fromFile, fromRank), p)
-    putPiece(boardPosition(toFile, toRank), p)
+  def movePiece(fromPosition: Double => Mat, toPosition: Double => Mat, p: piece.Piece) {
+    liftPiece(fromPosition, p)
+    putPiece(toPosition, p)
   }
 
   private def liftPiece(pos: (Double => Mat), p: piece.Piece) {
@@ -84,13 +83,12 @@ class RobotController(robotHost: Host, trackingHost: Host) {
   }
 
   private def testPiece(file: Int, rank: Int, p: piece.Piece) {
-    moveToPosition(boardPosition(file, rank)(p.gripHeight))
+    moveToPosition(getBoardPosition(BoardPos(file, rank))(p.gripHeight))
     robot.gripperMoveToPosition(p.gripWidth)
   }
 
-  private def boardPosition(rank: Int, file: Int)(height: Double): Mat = {
+  def boardCoordinates(x: Double, y: Double, z: Double) = {
     val (dx, dy, dz) = (24, 20.5, -234)
-    val (sx, sy, sz) = (57.25, 57.25, -1.0)
 
     def c(a: Double): Double = Math.cos(a / 180.0 * Math.PI)
     def s(a: Double): Double = Math.sin(a / 180.0 * Math.PI)
@@ -99,7 +97,7 @@ class RobotController(robotHost: Host, trackingHost: Host) {
     val corr_az = 3.1
     val corr = rot.y(corr_ay) * rot.x(corr_ax) * rot.z(corr_az)
 
-    val (x, y, z) = (dx + sx * rank, dy + sy * file, dz + sz * height)
+    val (xf, yf, zf) = (dx + x, dy + y, dz + z)
     val m = DenseMatrix(
       (-1.0, 0.0, 0.0, x),
       (0.0, 1.0, 0.0, y),
@@ -107,6 +105,28 @@ class RobotController(robotHost: Host, trackingHost: Host) {
       (0.0, 0.0, 0.0, 1.0))
 
     t_Rob_Board * corr * m
+  }
+  /** Positions on the Chessboard */
+  def getBoardPosition(p: BoardPos)(height: Double): Mat = {
+    val (sx, sy, sz) = (57.25, 57.25, -1.0)
+    boardCoordinates(sx * p.rank, sy * p.file, sz * height)
+  }
+
+  /** Positions for captured pieces. No bookkeeping is done here. */
+  def getCapturedPosition(idx: Int, color: view.Color)(height: Double): Mat = {
+    val (sx, sy, sz) = (50, 35, -1.0)
+    val dz = -3 //TODO adjust
+    val d = 100
+    val x = color match {
+      case Black => -d - (idx / 8) * sx
+      case White => 7 * 57.25 + d + (idx / 8) * sx
+    }
+    val y = color match {
+      case Black => 3.5 * 57.25 + 3.5 * sy - (idx % 8) * sy
+      case White => 3.5 * 57.25 - 3.5 * sy + (idx % 8) * sy
+    }
+    val z = sz * height + dz
+    boardCoordinates(x, y, z)
   }
 
   private def moveToPosition(position: Mat) {
