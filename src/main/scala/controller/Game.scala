@@ -1,13 +1,16 @@
 package controller
 
+import java.util.concurrent.Executors
+
 import scala.annotation.tailrec
 import scala.collection.mutable.MutableList
 import scala.concurrent.Await
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 
-import model.Move
 import logic._
+import model.Move
 
 case class GameEvent(move: Move, result: Option[Result])
 
@@ -21,6 +24,8 @@ class Game(white: Player, black: Player) {
   private var whitesTurn = true
 
   private val logic: ChessLogic = new CECPLogic
+
+  private val executionContext = ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor())
 
   private def publishAndWait(move: Move, result: Option[Result]) = {
     val futures = subscribers.map(_.handle(GameEvent(move, result)))
@@ -40,7 +45,7 @@ class Game(white: Player, black: Player) {
       makeTurn(player, true)
   }
 
-  def run(): Unit = {
+  def run(): Unit = Future {
     val (player, opponent) =
       if (whitesTurn)
         (white, black)
@@ -61,11 +66,12 @@ class Game(white: Player, black: Player) {
         publishAndWait(move, Some(result))
         Application.queueEvent(EndGameEvent(result))
     }
-  }
+  }(executionContext)
 
   def destroy(): Unit = {
     white.destroy()
     black.destroy()
     logic.destroy()
+    executionContext.shutdown()
   }
 }
