@@ -5,6 +5,7 @@ import controller.GameSubscriber
 import scala.concurrent.Future
 import model._
 import scala.collection.mutable.ArraySeq
+import controller.GameEvent
 
 sealed abstract class Color
 case object Black extends Color
@@ -19,8 +20,8 @@ trait BoardView extends GameSubscriber {
 
   val board = new Board()
 
-  def handle(move: Move): Future[Unit] = {
-    val actions: List[Action] = move match {
+  def handle(event: GameEvent): Future[Unit] = {
+    val actions: List[Action] = event.move match {
       case PromotionMove(src, dest, piece) =>
         List(SimpleMove(src, dest, Pawn),
           CaptureMove(dest, Pawn),

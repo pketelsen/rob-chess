@@ -9,8 +9,10 @@ import scala.concurrent.duration.Duration
 import model.Move
 import logic._
 
+case class GameEvent(move: Move, result: Option[Result])
+
 trait GameSubscriber {
-  def handle(move: Move): Future[Unit]
+  def handle(event: GameEvent): Future[Unit]
 }
 
 class Game(white: Player, black: Player) {
@@ -20,8 +22,8 @@ class Game(white: Player, black: Player) {
 
   private val logic: ChessLogic = new CECPLogic
 
-  private def publishAndWait(move: Move) = {
-    val futures = subscribers.map(_.handle(move))
+  private def publishAndWait(move: Move, result: Option[Result]) = {
+    val futures = subscribers.map(_.handle(GameEvent(move, result)))
 
     futures.foreach { Await.ready(_, Duration.Inf) }
   }
@@ -47,11 +49,18 @@ class Game(white: Player, black: Player) {
 
     val move = makeTurn(player)
 
-    opponent.opponentMove(move)
-    publishAndWait(move)
+    logic.getResult match {
+      case None =>
+        opponent.opponentMove(move)
+        publishAndWait(move, None)
 
-    whitesTurn = !whitesTurn
-    Application.queueEvent(NextTurnEvent)
+        whitesTurn = !whitesTurn
+        Application.queueEvent(NextTurnEvent)
+
+      case Some(result) =>
+        publishAndWait(move, Some(result))
+        Application.queueEvent(EndGameEvent(result))
+    }
   }
 
   def destroy(): Unit = {

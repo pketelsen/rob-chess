@@ -1,15 +1,18 @@
 package gui
 
-import model.Move
-import controller.Game
-import controller.GameSubscriber
 import scala.concurrent.Future
-import controller.StartCalibrationEvent
+
 import controller.Application
+import controller.GameEvent
+import controller.GameSubscriber
 import controller.Host
-import controller.QuitEvent
-import controller.StartGameEvent
 import controller.PlayerInfo
+import controller.StartCalibrationEvent
+import controller.StartGameEvent
+import controller.logic.ResultBlackWins
+import controller.logic.ResultDraw
+import controller.logic.ResultWhiteWins
+import model.Move
 
 class GUI extends GameSubscriber {
   var whitesTurn = true;
@@ -17,8 +20,15 @@ class GUI extends GameSubscriber {
   def showMessage(message: String) = println(message)
   def getMove(): Move = ???
 
-  def handle(move: Move): Future[Unit] = {
-    println(s"${if (whitesTurn) "white" else "black"} made move $move")
+  def handle(event: GameEvent): Future[Unit] = {
+    println(s"${if (whitesTurn) "White" else "Black"} made move ${event.move}")
+
+    event.result match {
+      case Some(ResultWhiteWins(message)) => println(s"White wins: $message")
+      case Some(ResultBlackWins(message)) => println(s"Black wins: $message")
+      case Some(ResultDraw(message)) => println(s"Draw: $message")
+      case _ =>
+    }
 
     whitesTurn = !whitesTurn;
 

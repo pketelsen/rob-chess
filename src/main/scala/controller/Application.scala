@@ -56,6 +56,10 @@ object Application {
 
         Some(state)
 
+      case (StateRunning(_, game), EndGameEvent(_)) =>
+        queueEvent(QuitEvent)
+        Some(state)
+
       case (StateRunning(_, game), QuitEvent) =>
         game.destroy()
         None

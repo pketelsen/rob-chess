@@ -1,5 +1,7 @@
 package controller
 
+import controller.logic.Result
+
 case class Host(hostname: String, port: Int)
 case class PlayerInfo(ai: Boolean)
 
@@ -11,6 +13,9 @@ case class StartGameEvent(
     extends ApplicationEvent
 
 object NextTurnEvent extends ApplicationEvent
+
+case class EndGameEvent(result: Result)
+  extends ApplicationEvent
 
 case class StartCalibrationEvent(
   robot: Host,
