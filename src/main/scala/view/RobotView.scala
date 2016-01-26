@@ -7,6 +7,7 @@ import robot.RobotController
 import scala.annotation.tailrec
 import scala.collection.mutable.HashMap
 import model._
+import scala.collection.mutable.ListBuffer
 
 class RobotView(rc: RobotController) extends BoardView {
 
@@ -19,7 +20,17 @@ class RobotView(rc: RobotController) extends BoardView {
       case Nil => Future.successful(())
     }
   }
-  private val capturedPieces = new HashMap[(Piece, Color), Int]()
+  private val capturedPieces: Map[(Piece, Color), ListBuffer[Int]] =
+    Map(((Pawn, White) -> new ListBuffer[Int]),
+      ((Rook, White) -> new ListBuffer[Int]),
+      ((Knight, White) -> new ListBuffer[Int]),
+      ((Bishop, White) -> new ListBuffer[Int]),
+      ((Queen, White) -> new ListBuffer[Int]),
+      ((Pawn, Black) -> new ListBuffer[Int]),
+      ((Rook, Black) -> new ListBuffer[Int]),
+      ((Knight, Black) -> new ListBuffer[Int]),
+      ((Bishop, Black) -> new ListBuffer[Int]),
+      ((Queen, Black) -> new ListBuffer[Int]))
 
   class CaptureCounter {
     private var ctr = 0
@@ -37,16 +48,18 @@ class RobotView(rc: RobotController) extends BoardView {
         val (_, color) = board(from).get
         val idx = captureCounters(color).get
         rc.movePiece(rc.getBoardPosition(from), rc.getCapturedPosition(idx, color), piece)
-        capturedPieces += (((piece, color), idx))
+        capturedPieces((piece, color)) += idx
         captureCounters(color).inc()
       }
       case PromoteMove(to, piece, color) => {
-        val idx = capturedPieces.lift((piece, color)) match {
-          case Some(i) => i
-          case None => {
-            println(s"No $color $piece found, assuming there is one at capture position 15")
-            15
-          }
+        val pcs = capturedPieces((piece, color))
+        val idx = if (pcs.isEmpty) {
+          println(s"No $color $piece found, this wasnt supposed to happen.")
+          throw new RuntimeException("Promotion with nonexistent piece. Not supported by robot.")
+        } else {
+          val i = pcs.head
+          pcs -= i
+          i
         }
         rc.movePiece(rc.getCapturedPosition(idx, color), rc.getBoardPosition(to), piece)
       }
