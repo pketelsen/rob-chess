@@ -25,7 +25,7 @@ class Game(white: Player, black: Player) {
 
   private val logic: ChessLogic = new CECPLogic
 
-  private val executionContext: ExecutionContext = ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor())
+  private val executionContext = ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor())
 
   private def publishAndWait(move: Move, result: Option[Result]) = {
     val futures = subscribers.map(_.handle(GameEvent(move, result)))
@@ -72,5 +72,6 @@ class Game(white: Player, black: Player) {
     white.destroy()
     black.destroy()
     logic.destroy()
+    executionContext.shutdown()
   }
 }
