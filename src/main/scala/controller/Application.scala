@@ -16,8 +16,8 @@ object Application {
   private trait State
 
   private case class StateStart() extends State
-  private case class StateCalibrated(robotController: RobotController) extends State
-  private case class StateRunning(robotController: RobotController, robotView: RobotView, game: Game) extends State
+  private case class StateCalibrated(robotController: Option[RobotController]) extends State
+  private case class StateRunning(robotController: Option[RobotController], robotView: Option[RobotView], game: Game) extends State
 
   private val eventBus = new Channel[ApplicationEvent]
   private val gui = new GUI
@@ -35,7 +35,7 @@ object Application {
   private def handleEvent(state: State, event: ApplicationEvent): Option[State] = {
     (state, event) match {
       case (StateStart(), StartCalibrationEvent(robotHost, trackingHost)) =>
-        val robotController = null // new RobotController(robotHost, trackingHost)
+        val robotController = None // Some(new RobotController(robotHost, trackingHost))
 
         Some(StateCalibrated(robotController))
 
@@ -44,9 +44,10 @@ object Application {
         val black = mkPlayer(blackInfo, false)
 
         val game = new Game(white, black)
-        val robotView = new RobotView(robotController)
+        val robotView = robotController.map(new RobotView(_))
+
         game.subscribe(gui)
-        game.subscribe(robotView)
+        robotView.foreach(game.subscribe(_))
 
         game.run()
 
