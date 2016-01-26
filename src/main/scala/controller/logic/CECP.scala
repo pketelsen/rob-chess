@@ -127,13 +127,34 @@ object CECP {
 
   val patternNormalMove = """^(.)(.)(.)(.)$""".r
   val patternPromotionMove = """^(.)(.)(.)(.)(.)$""".r
+
+  val patternResultWhiteWins = """^1-0 \{(.*)\}$""".r
+  val patternResultBlackWins = """^1/2-1/2 \{(.*)\}$""".r
+  val patternResultDraw = """^0-1 \{(.*)\}$""".r
 }
 
 class CECPLogic extends CECP("logic") with ChessLogic {
+  private var result: Option[Result] = None
+
   writeLine("force")
 
-  // TODO Handle game end 
-  protected def handleLine(line: String): Unit = ()
+  def getResult: Option[Result] = result
+
+  protected def handleLine(line: String): Unit = {
+    if (result != None)
+      return
+
+    line match {
+      case CECP.patternResultWhiteWins(message) =>
+        result = Some(ResultWhiteWins(message))
+      case CECP.patternResultBlackWins(message) =>
+        result = Some(ResultBlackWins(message))
+      case CECP.patternResultDraw(message) =>
+        result = Some(ResultDraw(message))
+
+      case _ =>
+    }
+  }
 }
 
 class CECPPlayer(val white: Boolean) extends CECP(if (white) "white" else "black") with Player {
