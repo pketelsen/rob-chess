@@ -10,13 +10,14 @@ import controller.logic.CECPLogic
 import model.BoardPos
 import model.NormalMove
 import controller.logic.CECPPlayer
+import view.RobotView
 
 object Application {
   private trait State
 
   private case class StateStart() extends State
   private case class StateCalibrated(robotController: RobotController) extends State
-  private case class StateRunning(robotController: RobotController, game: Game) extends State
+  private case class StateRunning(robotController: RobotController, robotView: RobotView, game: Game) extends State
 
   private val eventBus = new Channel[ApplicationEvent]
   private val gui = new GUI
@@ -43,24 +44,25 @@ object Application {
         val black = mkPlayer(blackInfo, false)
 
         val game = new Game(white, black)
-
+        val robotView = new RobotView(robotController)
         game.subscribe(gui)
-        //game.subscribe(robotController)
+        game.subscribe(robotView)
 
         game.run()
 
-        Some(StateRunning(robotController, game))
+        Some(StateRunning(robotController, robotView, game))
 
-      case (StateRunning(robotController, game), NextTurnEvent) =>
+      case (StateRunning(_, _, game), NextTurnEvent) =>
         game.run()
 
         Some(state)
 
-      case (StateRunning(_, game), EndGameEvent(_)) =>
+      case (StateRunning(_, robotView, game), EndGameEvent(_)) =>
         queueEvent(QuitEvent)
+        //TODO tell robot view to reset the board
         Some(state)
 
-      case (StateRunning(_, game), QuitEvent) =>
+      case (StateRunning(_, _, game), QuitEvent) =>
         game.destroy()
         None
 

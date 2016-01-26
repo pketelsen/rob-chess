@@ -5,7 +5,6 @@ import scala.language.implicitConversions
 import scala.concurrent.Future
 import robot.RobotController
 import scala.annotation.tailrec
-import scala.collection.mutable.HashMap
 import model._
 import scala.collection.mutable.ListBuffer
 
