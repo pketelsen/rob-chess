@@ -1,5 +1,7 @@
 package view
 
+import scala.language.implicitConversions
+
 import scala.concurrent.Future
 import robot.RobotController
 import scala.annotation.tailrec
@@ -14,7 +16,7 @@ class RobotView(rc: RobotController) extends BoardView {
       case head :: tail =>
         doAction(head)
         handleActions(tail)
-      case Nil => Future.successful()
+      case Nil => Future.successful(())
     }
   }
   private val capturedPieces = new HashMap[(Piece, Color), Int]()
