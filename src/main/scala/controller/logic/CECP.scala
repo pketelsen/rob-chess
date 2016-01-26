@@ -128,8 +128,8 @@ object CECP {
   val patternPromotionMove = """^(.)(.)(.)(.)(.)$""".r
 
   val patternResultWhiteWins = """^1-0 \{(.*)\}$""".r
-  val patternResultBlackWins = """^1/2-1/2 \{(.*)\}$""".r
-  val patternResultDraw = """^0-1 \{(.*)\}$""".r
+  val patternResultBlackWins = """^0-1 \{(.*)\}$""".r
+  val patternResultDraw = """^1/2-1/2 \{(.*)\}$""".r
 }
 
 class CECPLogic extends CECP("logic") with ChessLogic {
