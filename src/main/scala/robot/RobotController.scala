@@ -18,8 +18,9 @@ import scala.io.Source
 import breeze.linalg.rank
 import view._
 import model.BoardPos
+import robot.piece.Piece
 
-class RobotController(robotHost: Host, trackingHost: Host) {
+class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl {
   private val markerEffector = "Gripper_21012016"
   private val markerChessboard = "Chessboard"
   private val homePos = List(8.188339, -72.18192, 85.697, 0.085899, 74.57073, -174.2732)
@@ -62,9 +63,18 @@ class RobotController(robotHost: Host, trackingHost: Host) {
   //  movePiece(7, 7, 7, 0, testObject)
   //  movePiece(7, 0, 3, 3, testObject)
 
-  def movePiece(fromPosition: Double => Mat, toPosition: Double => Mat, p: piece.Piece) {
-    liftPiece(fromPosition, p)
-    putPiece(toPosition, p)
+  def movePiece(fromPosition: BoardPos, toPosition: BoardPos, piece: Piece) = {
+    movePiece(getBoardPosition(fromPosition)_, getBoardPosition(toPosition)_, piece)
+  }
+  def promotePiece(fromIndex: Int, fromColor: Color, toPosition: BoardPos, piece: Piece) = {
+    movePiece(getCapturedPosition(fromIndex, fromColor)_, getBoardPosition(toPosition)_, piece)
+  }
+  def capturePiece(fromPosition: BoardPos, toIndex: Int, toColor: Color, piece: Piece) = {
+    movePiece(getBoardPosition(fromPosition)_, getCapturedPosition(toIndex, toColor)_, piece)
+  }
+  private def movePiece(from: Double => Mat, to: Double => Mat, piece: Piece) {
+    liftPiece(from, piece)
+    putPiece(to, piece)
   }
 
   private def liftPiece(pos: (Double => Mat), p: piece.Piece) {
@@ -87,7 +97,7 @@ class RobotController(robotHost: Host, trackingHost: Host) {
     robot.gripperMoveToPosition(p.gripWidth)
   }
 
-  def boardCoordinates(x: Double, y: Double, z: Double) = {
+  private def boardCoordinates(x: Double, y: Double, z: Double) = {
     val (dx, dy, dz) = (24, 20.5, -234)
 
     def c(a: Double): Double = Math.cos(a / 180.0 * Math.PI)
@@ -107,13 +117,13 @@ class RobotController(robotHost: Host, trackingHost: Host) {
     t_Rob_Board * corr * m
   }
   /** Positions on the Chessboard */
-  def getBoardPosition(p: BoardPos)(height: Double): Mat = {
+  private def getBoardPosition(p: BoardPos)(height: Double): Mat = {
     val (sx, sy, sz) = (57.25, 57.25, -1.0)
     boardCoordinates(sx * p.rank, sy * p.file, sz * height)
   }
 
   /** Positions for captured pieces. No bookkeeping is done here. */
-  def getCapturedPosition(idx: Int, color: view.Color)(height: Double): Mat = {
+  private def getCapturedPosition(idx: Int, color: view.Color)(height: Double): Mat = {
     val (sx, sy, sz) = (50, 35, -1.0)
     val dz = -3 //TODO adjust
     val d = 100

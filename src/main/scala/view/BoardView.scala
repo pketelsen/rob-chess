@@ -28,7 +28,6 @@ trait BoardView extends GameSubscriber {
           PromoteMove(dest, piece, board(src).get._2))
       case NormalMove(src, dest) => {
         val srcPiece = board(src).get._1
-
         //NORMAL CAPTURE
         if (board(dest) != None) {
           val destPiece = board(dest).get._1
@@ -94,7 +93,7 @@ class Board {
   private def emptyRow: ArraySeq[Option[(Piece, Color)]] = ArraySeq.fill(8)(None)
 
   def update(pos: BoardPos, pc: Option[(Piece, Color)]): Unit = {
-    boardState(pos.file)(pos.rank) = pc
+    boardState(pos.rank)(pos.file) = pc
   }
-  def apply(pos: BoardPos): Option[(Piece, Color)] = boardState(pos.file)(pos.rank)
+  def apply(pos: BoardPos): Option[(Piece, Color)] = boardState(pos.rank)(pos.file)
 }

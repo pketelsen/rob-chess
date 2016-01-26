@@ -1,14 +1,14 @@
 package view
 
 import scala.language.implicitConversions
-
 import scala.concurrent.Future
 import robot.RobotController
 import scala.annotation.tailrec
 import model._
 import scala.collection.mutable.ListBuffer
+import robot.RobotControl
 
-class RobotView(rc: RobotController) extends BoardView {
+class RobotView(rc: RobotControl) extends BoardView {
 
   @tailrec
   final def handleActions(l: List[Action]): Future[Unit] = {
@@ -41,12 +41,12 @@ class RobotView(rc: RobotController) extends BoardView {
   private def doAction(a: Action) = {
     a match {
       case SimpleMove(from, to, piece) => {
-        rc.movePiece(rc.getBoardPosition(from), rc.getBoardPosition(to), piece)
+        rc.movePiece(from, to, piece)
       }
       case CaptureMove(from, piece) => {
         val (_, color) = board(from).get
         val idx = captureCounters(color).get
-        rc.movePiece(rc.getBoardPosition(from), rc.getCapturedPosition(idx, color), piece)
+        rc.capturePiece(from, idx, color, piece)
         capturedPieces((piece, color)) += idx
         captureCounters(color).inc()
       }
@@ -60,7 +60,7 @@ class RobotView(rc: RobotController) extends BoardView {
           pcs -= i
           i
         }
-        rc.movePiece(rc.getCapturedPosition(idx, color), rc.getBoardPosition(to), piece)
+        rc.promotePiece(idx, color, to, piece)
       }
     }
   }
