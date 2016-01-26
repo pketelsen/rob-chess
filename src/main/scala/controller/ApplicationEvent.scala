@@ -12,7 +12,7 @@ case class StartGameEvent(
   blackInfo: PlayerInfo)
     extends ApplicationEvent
 
-object NextTurnEvent extends ApplicationEvent
+case object NextTurnEvent extends ApplicationEvent
 
 case class EndGameEvent(result: Result)
   extends ApplicationEvent
@@ -22,4 +22,4 @@ case class StartCalibrationEvent(
   tracking: Host)
     extends ApplicationEvent
 
-object QuitEvent extends ApplicationEvent
+case object QuitEvent extends ApplicationEvent
