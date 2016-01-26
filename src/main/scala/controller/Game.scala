@@ -51,6 +51,7 @@ class Game(white: Player, black: Player) {
     publishAndWait(move)
 
     whitesTurn = !whitesTurn
+    Application.queueEvent(NextTurnEvent)
   }
 
   def destroy(): Unit = {

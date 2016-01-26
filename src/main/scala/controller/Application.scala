@@ -47,13 +47,12 @@ object Application {
         game.subscribe(gui)
         //game.subscribe(robotController)
 
-        queueEvent(NextTurnEvent)
+        game.run()
 
         Some(StateRunning(robotController, game))
 
       case (StateRunning(robotController, game), NextTurnEvent) =>
         game.run()
-        queueEvent(NextTurnEvent)
 
         Some(state)
 
