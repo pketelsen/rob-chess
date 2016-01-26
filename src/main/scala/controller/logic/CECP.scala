@@ -34,7 +34,7 @@ abstract class CECP(val name: String) {
   protected def readLine(): String = {
     val line = proc.readLine()
     handleLine(line)
-    println(s"Input from $name: $line")
+    //println(s"Input from $name: $line")
     line
   }
 
@@ -49,8 +49,7 @@ abstract class CECP(val name: String) {
 
   @tailrec
   protected final def await[A](cb: String => Option[A]): A = {
-    val line = readLine()
-    cb(line) match {
+    cb(readLine()) match {
       case Some(ret) => ret
       case None => await(cb)
     }
