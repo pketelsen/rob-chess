@@ -35,7 +35,7 @@ object Application {
   private def handleEvent(state: State, event: ApplicationEvent): Option[State] = {
     (state, event) match {
       case (StateStart(), StartCalibrationEvent(robotHost, trackingHost)) =>
-        val robotController = Some(new RobotControllerStub) // Some(new RobotController(robotHost, trackingHost))
+        val robotController = None //Some(new RobotControllerStub) // Some(new RobotController(robotHost, trackingHost))
 
         Some(StateCalibrated(robotController))
 
