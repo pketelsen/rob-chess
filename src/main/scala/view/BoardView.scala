@@ -59,6 +59,7 @@ trait BoardView extends GameSubscriber {
       }
     }
     modifyBoard(actions)
+    println(board)
     handleActions(actions)
   }
   protected def modifyBoard(actions: List[Action]) = actions.foreach {
@@ -96,4 +97,32 @@ class Board {
     boardState(pos.rank)(pos.file) = pc
   }
   def apply(pos: BoardPos): Option[(Piece, Color)] = boardState(pos.rank)(pos.file)
+
+  override def toString = {
+    boardState.map {
+      _.map {
+        _ match {
+          case Some((piece, color)) => {
+            (piece, color) match {
+              case (Pawn, White)   => "♙"
+              case (Rook, White)   => "♖"
+              case (Knight, White) => "♘"
+              case (Bishop, White) => "♗"
+              case (Queen, White)  => "♕"
+              case (King, White)   => "♔"
+              case (Pawn, Black)   => "♟"
+              case (Rook, Black)   => "♜"
+              case (Knight, Black) => "♞"
+              case (Bishop, Black) => "♝"
+              case (Queen, Black)  => "♛"
+              case (King, Black)   => "♚"
+
+            }
+          }
+          case None => "　"
+        }
+      }.mkString("")
+    }.mkString("\n")
+
+  }
 }
