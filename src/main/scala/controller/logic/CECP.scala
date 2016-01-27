@@ -130,6 +130,20 @@ object CECP {
   val patternResultWhiteWins = """^1-0 \{(.*)\}$""".r
   val patternResultBlackWins = """^0-1 \{(.*)\}$""".r
   val patternResultDraw = """^1/2-1/2 \{(.*)\}$""".r
+  
+  def parseMove(input: String): Move = {
+    input.toLowerCase match {
+      case CECP.patternNormalMove(srcFile, srcRank, destFile, destRank) =>
+        NormalMove(
+          BoardPos(CECP.file(srcFile), CECP.rank(srcRank)),
+          BoardPos(CECP.file(destFile), CECP.rank(destRank)))
+      case CECP.patternPromotionMove(srcFile, srcRank, destFile, destRank, piece) =>
+        PromotionMove(
+          BoardPos(CECP.file(srcFile), CECP.rank(srcRank)),
+          BoardPos(CECP.file(destFile), CECP.rank(destRank)),
+          CECP.piece(piece))
+    }
+  }
 }
 
 class CECPLogic extends CECP("logic") with ChessLogic {
@@ -167,24 +181,10 @@ class CECPPlayer(val white: Boolean) extends CECP(if (white) "white" else "black
       throw new RuntimeException("CECP AI player rejected valid move")
   }
 
-  private def parseMove(input: String): Move = {
-    input.toLowerCase match {
-      case CECP.patternNormalMove(srcFile, srcRank, destFile, destRank) =>
-        NormalMove(
-          BoardPos(CECP.file(srcFile), CECP.rank(srcRank)),
-          BoardPos(CECP.file(destFile), CECP.rank(destRank)))
-      case CECP.patternPromotionMove(srcFile, srcRank, destFile, destRank, piece) =>
-        PromotionMove(
-          BoardPos(CECP.file(srcFile), CECP.rank(srcRank)),
-          BoardPos(CECP.file(destFile), CECP.rank(destRank)),
-          CECP.piece(piece))
-    }
-  }
-
   protected def handleLine(line: String): Unit = {
     line match {
       case CECP.patternAIMove(m) =>
-        moves += parseMove(m)
+        moves += CECP.parseMove(m)
       case _ =>
     }
   }
