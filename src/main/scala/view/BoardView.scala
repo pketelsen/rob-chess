@@ -74,7 +74,6 @@ trait BoardView extends GameSubscriber {
     val actions = baseActions ++ promotionActions
 
     modifyBoard(actions)
-    println(board)
     handleActions(actions)
   }
   protected def modifyBoard(actions: List[Action]) = actions.foreach {

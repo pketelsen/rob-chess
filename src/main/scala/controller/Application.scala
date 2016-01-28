@@ -11,6 +11,7 @@ import gui.GameGUI
 import model.Color
 import model.White
 import model.Black
+import view.ConsoleView
 
 object Application {
   private trait State
@@ -50,6 +51,7 @@ object Application {
 
         val game = new Game(white, black)
         
+        game.subscribe(ConsoleView)
         //game.subscribe(gameGUI)
         robot.foreach(game.subscribe(_))
 

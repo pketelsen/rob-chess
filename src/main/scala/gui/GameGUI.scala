@@ -7,7 +7,7 @@ import model.Move
 
 class GameGUI {
   def getMove(): Move = {
-    println("please enter move: ")
+    println("Please enter move: ")
     val in = StdIn.readLine()
     CECP.parseMove(in)
   }
