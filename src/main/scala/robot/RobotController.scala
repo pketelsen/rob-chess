@@ -35,10 +35,8 @@ class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl 
   robot.command("SetAdeptFine 50")
 
   private val (t_Rob_Track, t_Eff_Mark): (Mat, Mat) = getCalibration(false)
-  //  println("done calibrating")
-  //  Console.readLine()
-
-  robot.movePTPJoints(homePos)
+  // println("done calibrating")
+  // Console.readLine()
 
   private val t_Track_Board = measureTracker(trackingChessboard) match {
     case Some(m) => m
@@ -54,24 +52,23 @@ class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl 
 
   assert(robot.gripperGoHome())
   assert(robot.gripperMoveToPosition(gripperHomePos))
+  assert(robot.movePTPJoints(homePos))
 
-//  println("starting capture")
-//  capturePiece(BoardPos(3, 7), 5, White, Queen)
-//  promotePiece(5, White, BoardPos(3, 7), Queen)
+  // robot.gripperMoveToPosition(5)
+  // println("starting capture")
+  // capturePiece(BoardPos(0, 3), 14, Black, Queen)
+  // promotePiece(14, Black, BoardPos(0, 3), Queen)
 
-  //  println("done testing")
+  // testPiece(getBoardPosition(BoardPos(0, 6)), King)
+  // testPiece(getCapturedPosition(6, Black), King)
 
-  //  moveToBoardPosition(7, 7, 0)
-
-  //  val testObject = piece.King
-
-  //  testPiece(3, 3, testObject)
-
-  //  movePiece(3, 3, 0, 0, testObject)
-  //  movePiece(0, 0, 0, 7, testObject)
-  //  movePiece(0, 7, 7, 7, testObject)
-  //  movePiece(7, 7, 7, 0, testObject)
-  //  movePiece(7, 0, 3, 3, testObject)
+  //  moveToPosition(getCapturedPosition(0, Black)(20))
+  //  moveToPosition(getBoardPosition(BoardPos(0, 6))())
+  //  moveToPosition(getBoardPosition(BoardPos(0, 6))())
+  //  moveToPosition(getCapturedPosition(0, Black)(20))
+  //  moveToPosition(getCapturedPosition(0, Black)(-7))
+  //  moveToPosition(getBoardPosition(BoardPos(0, 0))(1))
+  //  moveToPosition(getBoardPosition(BoardPos(7, 7))(1))
 
   def movePiece(fromPosition: BoardPos, toPosition: BoardPos, piece: Piece) = {
     movePiece(getBoardPosition(fromPosition)_, getBoardPosition(toPosition)_, piece)
@@ -102,13 +99,14 @@ class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl 
     moveToPosition(pos(baseHeight))
   }
 
-  private def testPiece(file: Int, rank: Int, p: piece.Piece) {
-    moveToPosition(getBoardPosition(BoardPos(file, rank))(p.gripHeight))
-    robot.gripperMoveToPosition(p.gripWidth)
+  private def testPiece(pos: (Double => Mat), p: piece.Piece) {
+    moveToPosition(pos(p.gripHeight + 10))
+    robot.gripperMoveToPosition(p.gripWidth + 20)
   }
 
   private def boardCoordinates(x: Double, y: Double, z: Double) = {
-    val (dx, dy, dz) = (24, 20.5, -234)
+    //val (dx, dy, dz) = (24, 20.5, -234)
+    val (dx, dy, dz) = (20, 21.5, -228)
 
     def c(a: Double): Double = Math.cos(a / 180.0 * Math.PI)
     def s(a: Double): Double = Math.sin(a / 180.0 * Math.PI)
@@ -135,13 +133,13 @@ class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl 
   /** Positions for captured pieces. No bookkeeping is done here. */
   private def getCapturedPosition(idx: Int, color: view.Color)(height: Double): Mat = {
     val (sx, sy, sz) = (50, 35, -1.0)
-    val dz = -3 //TODO adjust
+    val dz = 11 
     val d = 100
-    val x = color match {
+    val y = color match {
       case Black => -d - (idx / 8) * sx
       case White => 7 * 57.25 + d + (idx / 8) * sx
     }
-    val y = color match {
+    val x = color match {
       case Black => 3.5 * 57.25 + 3.5 * sy - (idx % 8) * sy
       case White => 3.5 * 57.25 - 3.5 * sy + (idx % 8) * sy
     }
@@ -165,7 +163,7 @@ class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl 
             (accMat, accQ, accN)
       })
 
-    if (count < 90) {
+    if (count < 60) {
       println(s"marker not visible ($count)")
       return None
     }
