@@ -18,7 +18,7 @@ import scala.io.Source
 import breeze.linalg.rank
 import view._
 import model.BoardPos
-import robot.piece.Piece
+import robot.piece._
 
 class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl {
   private val markerEffector = "Gripper_21012016"
@@ -35,8 +35,10 @@ class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl 
   robot.command("SetAdeptFine 50")
 
   private val (t_Rob_Track, t_Eff_Mark): (Mat, Mat) = getCalibration(false)
+  //  println("done calibrating")
+  //  Console.readLine()
 
-  //robot.movePTPJoints(homePos)
+  robot.movePTPJoints(homePos)
 
   private val t_Track_Board = measureTracker(trackingChessboard) match {
     case Some(m) => m
@@ -49,7 +51,15 @@ class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl 
 
   println(robot.getPositionHomRowWise())
   println(t_Board_Rob * robot.getPositionHomRowWise())
-  robot.gripperMoveToPosition(gripperHomePos)
+
+  assert(robot.gripperGoHome())
+  assert(robot.gripperMoveToPosition(gripperHomePos))
+
+//  println("starting capture")
+//  capturePiece(BoardPos(3, 7), 5, White, Queen)
+//  promotePiece(5, White, BoardPos(3, 7), Queen)
+
+  //  println("done testing")
 
   //  moveToBoardPosition(7, 7, 0)
 
@@ -109,9 +119,9 @@ class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl 
 
     val (xf, yf, zf) = (dx + x, dy + y, dz + z)
     val m = DenseMatrix(
-      (-1.0, 0.0, 0.0, x),
-      (0.0, 1.0, 0.0, y),
-      (0.0, 0.0, -1.0, z),
+      (-1.0, 0.0, 0.0, xf),
+      (0.0, 1.0, 0.0, yf),
+      (0.0, 0.0, -1.0, zf),
       (0.0, 0.0, 0.0, 1.0))
 
     t_Rob_Board * corr * m

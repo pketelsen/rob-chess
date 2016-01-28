@@ -71,7 +71,7 @@ class Robot(host: Host) extends CommandSocket(host) {
     (command("MoveMinChangeRowWiseStatus " + matToString(matrix) + " " + status) == "true")
   }
 
-  def gripperGoHome: Boolean = {
+  def gripperGoHome(): Boolean = {
     command("GripperGoHome", 3)(2) == "true"
   }
 
