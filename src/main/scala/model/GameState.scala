@@ -89,7 +89,6 @@ object BoardPos {
     }
 
     def unapply(string: String): Option[BoardPos] = {
-      println(string)
       if (string.length != 2)
         return None
 
