@@ -1,27 +1,26 @@
 package robot
 
-import java.util.Random
-import breeze.linalg.DenseMatrix
-import breeze.linalg.InjectNumericOps
-import controller.Game
-import robot.types._
-import controller.GameSubscriber
-import model.Move
-import scala.concurrent.Future
-import controller.Host
-import scala.annotation.tailrec
-import breeze.linalg.inv
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileWriter
+import java.util.Random
+
+import scala.annotation.tailrec
 import scala.io.Source
-import breeze.linalg.rank
-import view._
-import model.BoardPos
-import robot.piece.Piece
-import model.White
+
+import breeze.linalg.DenseMatrix
+import breeze.linalg.inv
+import controller.Host
 import model.Black
+import model.BoardPos
 import model.Color
+import model.White
+import robot.piece.Piece
+import robot.types.Mat
+import robot.types.Mat
+import robot.types.matToString
+import robot.types.rot
+import robot.types.stringToMat
 
 class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl {
   private val markerEffector = "Gripper_21012016"
@@ -38,8 +37,8 @@ class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl 
   robot.command("SetAdeptFine 50")
 
   private val (t_Rob_Track, t_Eff_Mark): (Mat, Mat) = getCalibration(false)
-
-  //robot.movePTPJoints(homePos)
+  // println("done calibrating")
+  // Console.readLine()
 
   private val t_Track_Board = measureTracker(trackingChessboard) match {
     case Some(m) => m
@@ -52,19 +51,26 @@ class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl 
 
   println(robot.getPositionHomRowWise())
   println(t_Board_Rob * robot.getPositionHomRowWise())
-  robot.gripperMoveToPosition(gripperHomePos)
 
-  //  moveToBoardPosition(7, 7, 0)
+  assert(robot.gripperGoHome())
+  assert(robot.gripperMoveToPosition(gripperHomePos))
+  assert(robot.movePTPJoints(homePos))
 
-  //  val testObject = piece.King
+  // robot.gripperMoveToPosition(5)
+  // println("starting capture")
+  // capturePiece(BoardPos(0, 3), 14, Black, Queen)
+  // promotePiece(14, Black, BoardPos(0, 3), Queen)
 
-  //  testPiece(3, 3, testObject)
+  // testPiece(getBoardPosition(BoardPos(0, 6)), King)
+  // testPiece(getCapturedPosition(6, Black), King)
 
-  //  movePiece(3, 3, 0, 0, testObject)
-  //  movePiece(0, 0, 0, 7, testObject)
-  //  movePiece(0, 7, 7, 7, testObject)
-  //  movePiece(7, 7, 7, 0, testObject)
-  //  movePiece(7, 0, 3, 3, testObject)
+  //  moveToPosition(getCapturedPosition(0, Black)(20))
+  //  moveToPosition(getBoardPosition(BoardPos(0, 6))())
+  //  moveToPosition(getBoardPosition(BoardPos(0, 6))())
+  //  moveToPosition(getCapturedPosition(0, Black)(20))
+  //  moveToPosition(getCapturedPosition(0, Black)(-7))
+  //  moveToPosition(getBoardPosition(BoardPos(0, 0))(1))
+  //  moveToPosition(getBoardPosition(BoardPos(7, 7))(1))
 
   def movePiece(fromPosition: BoardPos, toPosition: BoardPos, piece: Piece) = {
     movePiece(getBoardPosition(fromPosition)_, getBoardPosition(toPosition)_, piece)
@@ -95,13 +101,14 @@ class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl 
     moveToPosition(pos(baseHeight))
   }
 
-  private def testPiece(file: Int, rank: Int, p: piece.Piece) {
-    moveToPosition(getBoardPosition(BoardPos(file, rank))(p.gripHeight))
-    robot.gripperMoveToPosition(p.gripWidth)
+  private def testPiece(pos: (Double => Mat), p: piece.Piece) {
+    moveToPosition(pos(p.gripHeight + 10))
+    robot.gripperMoveToPosition(p.gripWidth + 20)
   }
 
   private def boardCoordinates(x: Double, y: Double, z: Double) = {
-    val (dx, dy, dz) = (24, 20.5, -234)
+    //val (dx, dy, dz) = (24, 20.5, -234)
+    val (dx, dy, dz) = (20, 21.5, -228)
 
     def c(a: Double): Double = Math.cos(a / 180.0 * Math.PI)
     def s(a: Double): Double = Math.sin(a / 180.0 * Math.PI)
@@ -112,9 +119,9 @@ class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl 
 
     val (xf, yf, zf) = (dx + x, dy + y, dz + z)
     val m = DenseMatrix(
-      (-1.0, 0.0, 0.0, x),
-      (0.0, 1.0, 0.0, y),
-      (0.0, 0.0, -1.0, z),
+      (-1.0, 0.0, 0.0, xf),
+      (0.0, 1.0, 0.0, yf),
+      (0.0, 0.0, -1.0, zf),
       (0.0, 0.0, 0.0, 1.0))
 
     t_Rob_Board * corr * m
@@ -128,13 +135,13 @@ class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl 
   /** Positions for captured pieces. No bookkeeping is done here. */
   private def getCapturedPosition(idx: Int, color: Color)(height: Double): Mat = {
     val (sx, sy, sz) = (50, 35, -1.0)
-    val dz = -3 //TODO adjust
+    val dz = 11 
     val d = 100
-    val x = color match {
+    val y = color match {
       case Black => -d - (idx / 8) * sx
       case White => 7 * 57.25 + d + (idx / 8) * sx
     }
-    val y = color match {
+    val x = color match {
       case Black => 3.5 * 57.25 + 3.5 * sy - (idx % 8) * sy
       case White => 3.5 * 57.25 - 3.5 * sy + (idx % 8) * sy
     }
@@ -158,7 +165,7 @@ class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl 
             (accMat, accQ, accN)
       })
 
-    if (count < 90) {
+    if (count < 60) {
       println(s"marker not visible ($count)")
       return None
     }

@@ -1,7 +1,6 @@
 package controller
 
 import model._
-import gui.GUI
 import gui.GameGUI
 
 
