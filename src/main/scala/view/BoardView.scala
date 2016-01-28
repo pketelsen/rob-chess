@@ -39,17 +39,17 @@ trait BoardView extends GameSubscriber {
           val direction = src.file - dest.file
           val rank = src.rank
           val (rookSrc, rookDest) =
-            if (direction > 0)
-              (new BoardPos(7,rank), new BoardPos(5,rank))
+            if (direction < 0)
+              (new BoardPos(7, rank), new BoardPos(5, rank))
             else
-              (new BoardPos(0,rank), new BoardPos(2,rank))
+              (new BoardPos(0, rank), new BoardPos(2, rank))
 
           List(SimpleMove(src, dest, King),
             SimpleMove(rookSrc, rookDest, Rook))
 
           // EN PASSANT
         } else if (srcPiece == Pawn && src.file != dest.file) {
-          List(CaptureMove(BoardPos(src.rank, dest.file), Pawn),
+          List(CaptureMove(BoardPos(dest.file, src.rank), Pawn),
             SimpleMove(src, dest, Pawn))
 
           // NORMAL MOVE
