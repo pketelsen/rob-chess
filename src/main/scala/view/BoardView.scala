@@ -35,14 +35,14 @@ trait BoardView extends GameSubscriber {
             SimpleMove(src, dest, srcPiece))
 
           //CASTLING
-        } else if (srcPiece == King && 1 < Math.abs(src.rank - dest.rank)) {
-          val direction = src.rank - dest.rank
-          val file = src.file
+        } else if (srcPiece == King && 1 < Math.abs(src.file - dest.file)) {
+          val direction = src.file - dest.file
+          val rank = src.rank
           val (rookSrc, rookDest) =
             if (direction > 0)
-              (new BoardPos(file, 7), new BoardPos(file, 5))
+              (new BoardPos(7,rank), new BoardPos(5,rank))
             else
-              (new BoardPos(file, 0), new BoardPos(file, 2))
+              (new BoardPos(0,rank), new BoardPos(2,rank))
 
           List(SimpleMove(src, dest, King),
             SimpleMove(rookSrc, rookDest, Rook))
