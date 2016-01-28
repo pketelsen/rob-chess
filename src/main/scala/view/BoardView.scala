@@ -21,43 +21,51 @@ trait BoardView extends GameSubscriber {
   val board = new Board()
 
   def handle(event: GameEvent): Future[Unit] = {
-    val actions: List[Action] = event.move match {
-      case PromotionMove(src, dest, piece) =>
-        List(SimpleMove(src, dest, Pawn),
-          CaptureMove(dest, Pawn),
-          PromoteMove(dest, piece, board(src).get._2))
-      case NormalMove(src, dest) => {
-        val srcPiece = board(src).get._1
-        //NORMAL CAPTURE
-        if (board(dest) != None) {
-          val destPiece = board(dest).get._1
-          List(CaptureMove(dest, destPiece),
-            SimpleMove(src, dest, srcPiece))
+    val Move(src, dest, promotion) = event.move
 
-          //CASTLING
-        } else if (srcPiece == King && 1 < Math.abs(src.file - dest.file)) {
-          val direction = src.file - dest.file
-          val rank = src.rank
-          val (rookSrc, rookDest) =
-            if (direction < 0)
-              (new BoardPos(7, rank), new BoardPos(5, rank))
-            else
-              (new BoardPos(0, rank), new BoardPos(2, rank))
+    val baseActions: List[Action] = {
+      val srcPiece = board(src).get._1
+      //NORMAL CAPTURE
+      if (board(dest) != None) {
+        val destPiece = board(dest).get._1
+        List(CaptureMove(dest, destPiece),
+          SimpleMove(src, dest, srcPiece))
 
-          List(SimpleMove(src, dest, King),
-            SimpleMove(rookSrc, rookDest, Rook))
+        //CASTLING
+      } else if (srcPiece == King && 1 < Math.abs(src.file - dest.file)) {
+        val direction = src.file - dest.file
+        val rank = src.rank
+        val (rookSrc, rookDest) =
+          if (direction < 0)
+            (new BoardPos(7, rank), new BoardPos(5, rank))
+          else
+            (new BoardPos(0, rank), new BoardPos(2, rank))
 
-          // EN PASSANT
-        } else if (srcPiece == Pawn && src.file != dest.file) {
-          List(CaptureMove(BoardPos(dest.file, src.rank), Pawn),
-            SimpleMove(src, dest, Pawn))
+        List(SimpleMove(src, dest, King),
+          SimpleMove(rookSrc, rookDest, Rook))
 
-          // NORMAL MOVE
-        } else {
-          List(SimpleMove(src, dest, srcPiece))
-        }
+        // EN PASSANT
+      } else if (srcPiece == Pawn && src.file != dest.file) {
+        List(CaptureMove(BoardPos(dest.file, src.rank), Pawn),
+          SimpleMove(src, dest, Pawn))
+
+        // NORMAL MOVE
+      } else {
+        List(SimpleMove(src, dest, srcPiece))
       }
     }
+
+    val promotionActions: List[Action] = promotion match {
+      case Some(piece) =>
+        List(CaptureMove(dest, Pawn),
+          PromoteMove(dest, piece, board(src).get._2))
+
+      case None =>
+        List()
+    }
+
+    val actions = baseActions ++ promotionActions
+
     modifyBoard(actions)
     println(board)
     handleActions(actions)
@@ -104,18 +112,18 @@ class Board {
         _ match {
           case Some((piece, color)) => {
             (piece, color) match {
-              case (Pawn, White)   => "♙"
-              case (Rook, White)   => "♖"
+              case (Pawn, White) => "♙"
+              case (Rook, White) => "♖"
               case (Knight, White) => "♘"
               case (Bishop, White) => "♗"
-              case (Queen, White)  => "♕"
-              case (King, White)   => "♔"
-              case (Pawn, Black)   => "♟"
-              case (Rook, Black)   => "♜"
+              case (Queen, White) => "♕"
+              case (King, White) => "♔"
+              case (Pawn, Black) => "♟"
+              case (Rook, Black) => "♜"
               case (Knight, Black) => "♞"
               case (Bishop, Black) => "♝"
-              case (Queen, Black)  => "♛"
-              case (King, Black)   => "♚"
+              case (Queen, Black) => "♛"
+              case (King, Black) => "♚"
 
             }
           }

@@ -1,15 +1,11 @@
 package controller
 
-import controller._
-import gui.GUI
-import scala.concurrent.Channel
-import robot._
 import scala.annotation.tailrec
-import controller.logic.CECP
-import controller.logic.CECPLogic
-import model.BoardPos
-import model.NormalMove
+import scala.concurrent.Channel
+
 import controller.logic.CECPPlayer
+import gui.GUI
+import robot.RobotControl
 import view.RobotView
 
 object Application {

@@ -30,15 +30,9 @@ case class BoardPos(file: Int, rank: Int) {
   override def toString() = s"${"abcdefgh"(file)}${rank + 1}"
 }
 
-sealed abstract class Move {
-  override def toString(): String
-}
-
-case class NormalMove(src: BoardPos, dest: BoardPos) extends Move {
-  override def toString() = src.toString + dest.toString
-}
-case class PromotionMove(src: BoardPos, dest: BoardPos, promotion: Piece) extends Move {
-  override def toString() = src.toString + dest.toString + promotion.toString
+case class Move(src: BoardPos, dest: BoardPos, promotion: Option[Piece]) {
+  override def toString(): String =
+    src.toString + dest.toString + promotion.map(_.toString).getOrElse("")
 }
 
 case class GameState(moves: Seq[Move])

@@ -1,20 +1,19 @@
 package controller.logic
 
-import model.Move
 import scala.annotation.tailrec
-import controller.Player
-import controller.Application
-import model.NormalMove
-import model.BoardPos
-import model.Piece
-import model.King
-import model.Bishop
-import model.Rook
-import model.Knight
-import model.Queen
-import model.PromotionMove
-import scala.concurrent.Channel
 import scala.collection.mutable.Queue
+import scala.sys.process.stringSeqToProcess
+
+import controller.Application
+import controller.Player
+import model.Bishop
+import model.BoardPos
+import model.King
+import model.Knight
+import model.Move
+import model.Piece
+import model.Queen
+import model.Rook
 
 /**
  * The Chess Engine Communication Protocol used by gnuchess, crafty, ...
@@ -130,18 +129,19 @@ object CECP {
   val patternResultWhiteWins = """^1-0 \{(.*)\}$""".r
   val patternResultBlackWins = """^0-1 \{(.*)\}$""".r
   val patternResultDraw = """^1/2-1/2 \{(.*)\}$""".r
-  
+
   def parseMove(input: String): Move = {
     input.toLowerCase match {
       case CECP.patternNormalMove(srcFile, srcRank, destFile, destRank) =>
-        NormalMove(
-          BoardPos(CECP.file(srcFile), CECP.rank(srcRank)),
-          BoardPos(CECP.file(destFile), CECP.rank(destRank)))
-      case CECP.patternPromotionMove(srcFile, srcRank, destFile, destRank, piece) =>
-        PromotionMove(
+        Move(
           BoardPos(CECP.file(srcFile), CECP.rank(srcRank)),
           BoardPos(CECP.file(destFile), CECP.rank(destRank)),
-          CECP.piece(piece))
+          None)
+      case CECP.patternPromotionMove(srcFile, srcRank, destFile, destRank, piece) =>
+        Move(
+          BoardPos(CECP.file(srcFile), CECP.rank(srcRank)),
+          BoardPos(CECP.file(destFile), CECP.rank(destRank)),
+          Some(CECP.piece(piece)))
     }
   }
 }
