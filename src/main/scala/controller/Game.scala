@@ -1,16 +1,17 @@
 package controller
 
 import java.util.concurrent.Executors
-
 import scala.annotation.tailrec
 import scala.collection.mutable.MutableList
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
-
 import logic._
 import model.Move
+import model.White
+import model.Color
+import model.Black
 
 case class GameEvent(move: Move, result: Option[Result])
 
@@ -21,7 +22,7 @@ trait GameSubscriber {
 class Game(white: Player, black: Player) {
   private val subscribers = MutableList[GameSubscriber]()
 
-  private var whitesTurn = true
+  private var turn: Color = White
 
   private val logic: ChessLogic = new CECPLogic
 
@@ -46,11 +47,12 @@ class Game(white: Player, black: Player) {
   }
 
   def run(): Unit = Future {
-    val (player, opponent) =
-      if (whitesTurn)
+    val (player, opponent) = turn match {
+      case White =>
         (white, black)
-      else
+      case Black =>
         (black, white)
+    }
 
     val move = makeTurn(player)
 
@@ -59,7 +61,7 @@ class Game(white: Player, black: Player) {
         opponent.opponentMove(move)
         publishAndWait(move, None)
 
-        whitesTurn = !whitesTurn
+        turn = turn.other
         Application.queueEvent(NextTurnEvent)
 
       case Some(result) =>

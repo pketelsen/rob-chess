@@ -87,64 +87,12 @@ abstract class CECP(val name: String) {
 }
 
 object CECP {
-  // TODO Clean up and move to Move.unapply, ... methods
-  def file(v: String): Int =
-    v match {
-      case "a" => 0
-      case "b" => 1
-      case "c" => 2
-      case "d" => 3
-      case "e" => 4
-      case "f" => 5
-      case "g" => 6
-      case "h" => 7
-    }
-
-  def rank(v: String): Int =
-    v match {
-      case "1" => 0
-      case "2" => 1
-      case "3" => 2
-      case "4" => 3
-      case "5" => 4
-      case "6" => 5
-      case "7" => 6
-      case "8" => 7
-    }
-
-  def piece(v: String): Piece =
-    v match {
-      case "r" => Rook
-      case "n" => Knight
-      case "b" => Bishop
-      case "k" => King
-      case "q" => Queen
-    }
-
   val patternInvalidMove = """(?i)^(?:illegal|invalid) move""".r
   val patternAIMove = """(?i)^(?:move|my move is :) (\S+)$""".r
-
-  val patternNormalMove = """^(.)(.)(.)(.)$""".r
-  val patternPromotionMove = """^(.)(.)(.)(.)(.)$""".r
 
   val patternResultWhiteWins = """^1-0 \{(.*)\}$""".r
   val patternResultBlackWins = """^0-1 \{(.*)\}$""".r
   val patternResultDraw = """^1/2-1/2 \{(.*)\}$""".r
-
-  def parseMove(input: String): Move = {
-    input.toLowerCase match {
-      case CECP.patternNormalMove(srcFile, srcRank, destFile, destRank) =>
-        Move(
-          BoardPos(CECP.file(srcFile), CECP.rank(srcRank)),
-          BoardPos(CECP.file(destFile), CECP.rank(destRank)),
-          None)
-      case CECP.patternPromotionMove(srcFile, srcRank, destFile, destRank, piece) =>
-        Move(
-          BoardPos(CECP.file(srcFile), CECP.rank(srcRank)),
-          BoardPos(CECP.file(destFile), CECP.rank(destRank)),
-          Some(CECP.piece(piece)))
-    }
-  }
 }
 
 class CECPLogic extends CECP("logic") with ChessLogic {
@@ -185,7 +133,13 @@ class CECPPlayer(val color: Color) extends CECP(color.toString()) with Player {
   protected def handleLine(line: String): Unit = {
     line match {
       case CECP.patternAIMove(m) =>
-        moves += CECP.parseMove(m)
+        m match {
+          case Move.Match(move) =>
+            moves += move
+
+          case _ =>
+            throw new RuntimeException("CECP AI player made unparsable move")
+        }
       case _ =>
     }
   }
