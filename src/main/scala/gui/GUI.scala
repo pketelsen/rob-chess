@@ -1,6 +1,8 @@
 package gui
 
 import scala.concurrent.Future
+import scala.io.StdIn
+
 import controller.Application
 import controller.GameEvent
 import controller.GameSubscriber
@@ -8,11 +10,11 @@ import controller.Host
 import controller.PlayerInfo
 import controller.StartCalibrationEvent
 import controller.StartGameEvent
+import controller.logic.CECP
 import controller.logic.ResultBlackWins
 import controller.logic.ResultDraw
 import controller.logic.ResultWhiteWins
 import model.Move
-import controller.logic.CECP
 
 class GUI extends GameSubscriber {
   var whitesTurn = true;
@@ -20,7 +22,7 @@ class GUI extends GameSubscriber {
   def showMessage(message: String) = println(message)
   def getMove(): Move = {
     println("please enter move: ")
-    val in = Console.readLine()
+    val in = StdIn.readLine()
     CECP.parseMove(in)
   }
 
