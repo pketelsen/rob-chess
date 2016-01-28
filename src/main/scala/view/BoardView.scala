@@ -127,10 +127,10 @@ class Board {
 
             }
           }
-          case None => "　"
+          case None => " "
         }
       }.mkString("")
-    }.mkString("\n")
+    }.reverse.mkString("\n")
 
   }
 }
