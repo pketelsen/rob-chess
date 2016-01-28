@@ -3,7 +3,6 @@ package controller.logic
 import scala.annotation.tailrec
 import scala.collection.mutable.Queue
 import scala.sys.process.stringSeqToProcess
-
 import controller.Application
 import controller.Player
 import model.Bishop
@@ -14,6 +13,8 @@ import model.Move
 import model.Piece
 import model.Queen
 import model.Rook
+import model.Color
+import model.White
 
 /**
  * The Chess Engine Communication Protocol used by gnuchess, crafty, ...
@@ -170,10 +171,10 @@ class CECPLogic extends CECP("logic") with ChessLogic {
   }
 }
 
-class CECPPlayer(val white: Boolean) extends CECP(if (white) "white" else "black") with Player {
+class CECPPlayer(val color: Color) extends CECP(color.toString()) with Player {
   val moves = Queue[Move]()
 
-  if (white)
+  if (color == White)
     writeLine("go")
 
   def opponentMove(move: Move): Unit = {

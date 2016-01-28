@@ -1,5 +1,16 @@
 package model
 
+sealed abstract class Color {
+  def other: Color
+}
+
+case object White extends Color {
+  def other = Black
+}
+case object Black extends Color {
+  def other = White
+}
+
 abstract sealed class Piece
 
 case object Pawn extends Piece {

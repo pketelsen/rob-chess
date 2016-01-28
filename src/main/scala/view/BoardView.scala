@@ -1,15 +1,22 @@
 package view
 
-import model.Move
-import controller.GameSubscriber
-import scala.concurrent.Future
-import model._
 import scala.collection.mutable.ArraySeq
-import controller.GameEvent
+import scala.concurrent.Future
 
-sealed abstract class Color
-case object Black extends Color
-case object White extends Color
+import controller.GameEvent
+import controller.GameSubscriber
+import model.Bishop
+import model.Black
+import model.BoardPos
+import model.Color
+import model.King
+import model.Knight
+import model.Move
+import model.Pawn
+import model.Piece
+import model.Queen
+import model.Rook
+import model.White
 
 sealed abstract class Action
 case class SimpleMove(from: BoardPos, to: BoardPos, piece: Piece) extends Action

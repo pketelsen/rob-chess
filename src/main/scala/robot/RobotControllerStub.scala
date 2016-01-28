@@ -2,7 +2,7 @@ package robot
 
 import model.BoardPos
 import robot.piece.Piece
-import view.Color
+import model.Color
 
 trait RobotControl {
   def movePiece(fromPosition: BoardPos, toPosition: BoardPos, piece: Piece)

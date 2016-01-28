@@ -19,6 +19,9 @@ import breeze.linalg.rank
 import view._
 import model.BoardPos
 import robot.piece.Piece
+import model.White
+import model.Black
+import model.Color
 
 class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl {
   private val markerEffector = "Gripper_21012016"
@@ -123,7 +126,7 @@ class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl 
   }
 
   /** Positions for captured pieces. No bookkeeping is done here. */
-  private def getCapturedPosition(idx: Int, color: view.Color)(height: Double): Mat = {
+  private def getCapturedPosition(idx: Int, color: Color)(height: Double): Mat = {
     val (sx, sy, sz) = (50, 35, -1.0)
     val dz = -3 //TODO adjust
     val d = 100

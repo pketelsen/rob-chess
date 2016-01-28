@@ -2,61 +2,73 @@ package controller
 
 import scala.annotation.tailrec
 import scala.concurrent.Channel
-
 import controller.logic.CECPPlayer
-import gui.GUI
+import gui.PlayerSetupGUI
 import robot.RobotControl
 import view.RobotView
+import gui.RobotSetupGUI
+import gui.GameGUI
+import model.Color
+import model.White
+import model.Black
 
 object Application {
   private trait State
 
-  private case class StateStart() extends State
-  private case class StateCalibrated(robotController: Option[RobotControl]) extends State
-  private case class StateRunning(robotController: Option[RobotControl], robotView: Option[RobotView], game: Game) extends State
+  private case object StateStart extends State
+  private case class StateRobotSetup(gui: RobotSetupGUI) extends State
+  private case class StatePlayerSetup(gui: PlayerSetupGUI, robot: Option[RobotView]) extends State
+  private case class StateRunning(gui: GameGUI, robot: Option[RobotView], game: Game) extends State
 
   private val eventBus = new Channel[ApplicationEvent]
-  private val gui = new GUI
 
-  private def mkPlayer(info: PlayerInfo, white: Boolean): Player =
-    if (info.ai)
-      new CECPPlayer(white)
-    else
-      new HumanPlayer(white, gui)
+  private def mkPlayer(info: PlayerInfo, color: Color, gui: GameGUI): Player =
+    info.playerType match {
+      case PlayerTypeHuman => new HumanPlayer(color, gui)
+      case PlayerTypeAI => new CECPPlayer(color)
+    }
 
   def queueEvent(event: ApplicationEvent) = eventBus.write(event)
 
-  def showMessage(message: String) = gui.showMessage(message)
+  def showMessage(message: String) = queueEvent(MessageEvent(message))
 
   private def handleEvent(state: State, event: ApplicationEvent): Option[State] = {
     (state, event) match {
-      case (StateStart(), StartCalibrationEvent(robotHost, trackingHost)) =>
-        val robotController = None //Some(new RobotControllerStub) // Some(new RobotController(robotHost, trackingHost))
+      case (StateStart, InitEvent) =>
+        val robotSetupGUI = new RobotSetupGUI
+        Some(StateRobotSetup(robotSetupGUI))
 
-        Some(StateCalibrated(robotController))
+      case (StateRobotSetup(robotSetupGUI), RobotSetupEvent(robot)) =>
+        val playerSetupGUI = new PlayerSetupGUI
+        Some(StatePlayerSetup(playerSetupGUI, robot))
 
-      case (StateCalibrated(robotController), StartGameEvent(whiteInfo, blackInfo)) =>
-        val white = mkPlayer(whiteInfo, true)
-        val black = mkPlayer(blackInfo, false)
+      case (StatePlayerSetup(playerSetupGUI, robot), StartGameEvent(whiteInfo, blackInfo)) =>
+        val gameGUI = new GameGUI
+
+        val white = mkPlayer(whiteInfo, White, gameGUI)
+        val black = mkPlayer(blackInfo, Black, gameGUI)
 
         val game = new Game(white, black)
-        val robotView = robotController.map(new RobotView(_))
-
-        game.subscribe(gui)
-        robotView.foreach(game.subscribe(_))
+        
+        //game.subscribe(gui)
+        robot.foreach(game.subscribe(_))
 
         game.run()
 
-        Some(StateRunning(robotController, robotView, game))
+        Some(StateRunning(gameGUI, robot, game))
 
       case (StateRunning(_, _, game), NextTurnEvent) =>
         game.run()
 
         Some(state)
 
-      case (StateRunning(_, robotView, game), EndGameEvent(_)) =>
+      case (StateRunning(_, robot, game), EndGameEvent(_)) =>
         queueEvent(QuitEvent)
         //TODO tell robot view to reset the board
+        Some(state)
+
+      case (StateRunning(gameGUI, _, _), MessageEvent(message)) =>
+        gameGUI.showMessage(message)
         Some(state)
 
       case (StateRunning(_, _, game), QuitEvent) =>
@@ -73,7 +85,7 @@ object Application {
   }
 
   @tailrec
-  def handleEvents(state: State): Unit = {
+  private def handleEvents(state: State): Unit = {
     handleEvent(state, eventBus.read) match {
       case Some(newState) =>
         handleEvents(newState)
@@ -83,5 +95,8 @@ object Application {
     }
   }
 
-  def main(args: Array[String]) = handleEvents(StateStart())
+  def main(args: Array[String]) = {
+    queueEvent(InitEvent)
+    handleEvents(StateStart)
+  }
 }
