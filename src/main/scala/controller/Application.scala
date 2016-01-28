@@ -50,7 +50,7 @@ object Application {
 
         val game = new Game(white, black)
         
-        //game.subscribe(gui)
+        //game.subscribe(gameGUI)
         robot.foreach(game.subscribe(_))
 
         game.run()
