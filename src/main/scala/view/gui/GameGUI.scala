@@ -9,11 +9,8 @@ import java.awt.GridBagLayout
 import java.awt.RenderingHints
 import java.awt.geom.AffineTransform
 import java.awt.geom.Rectangle2D
-
-import scala.annotation.tailrec
+import scala.concurrent.Channel
 import scala.concurrent.Future
-import scala.io.StdIn
-
 import javax.swing.JButton
 import javax.swing.JFrame
 import javax.swing.JPanel
@@ -26,6 +23,10 @@ import model.Move
 import model.Piece
 import view.Action
 import view.BoardView
+import java.awt.BasicStroke
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
+import java.awt.event.MouseMotionAdapter
 
 class GameGUI extends AbstractGUI with BoardView {
   private val borderWidth = 0.015
@@ -35,6 +36,8 @@ class GameGUI extends AbstractGUI with BoardView {
   private val borderColor = new awt.Color(0.3f, 0.3f, 0.3f)
   private val whiteBgColor = new awt.Color(0.8f, 0.8f, 0.8f)
   private val blackBgColor = new awt.Color(0.6f, 0.6f, 0.6f)
+  private val selectionColor = new awt.Color(1.0f, 1.0f, 1.0f)
+  private val hoverColor = new awt.Color(0.9f, 0.9f, 0.9f, 0.15f)
 
   private var gamePanel: JPanel = null
   private var gameHistoryArea: JTextArea = null
@@ -42,8 +45,13 @@ class GameGUI extends AbstractGUI with BoardView {
 
   private var svg: SVG = null
 
+  private var turn: Option[Color] = None
+  private var hover: Option[BoardPos] = None
+  private var selected: Option[BoardPos] = None
+  private val moveChannel: Channel[Move] = new Channel[Move]
+
   // To avoid accessing a mutable sequence from the Swing thread
-  private var boardData: Seq[(BoardPos, (Color, Piece))] = Seq()
+  private var boardData: Map[BoardPos, (Color, Piece)] = Map()
 
   initialize()
 
@@ -58,6 +66,12 @@ class GameGUI extends AbstractGUI with BoardView {
           g.fill(new Rectangle2D.Double(file, rank, 1, 1))
         }
       }
+    }
+
+    hover.foreach {
+      case BoardPos(file, rank) =>
+        g.setColor(hoverColor)
+        g.fill(new Rectangle2D.Double(file, 7 - rank, 1, 1))
     }
   }
 
@@ -80,8 +94,15 @@ class GameGUI extends AbstractGUI with BoardView {
     }
   }
 
+  private def paintSelection(g: Graphics2D): Unit = selected.foreach {
+    case BoardPos(file, rank) =>
+      g.setStroke(new BasicStroke(0.05f))
+      g.setColor(selectionColor)
+      g.draw(new Rectangle2D.Double(file, 7 - rank, 1, 1))
+  }
+
   private def updateBoardData(): Unit = {
-    val newBoardData = Seq((0 until 8).flatMap { file =>
+    val newBoardData = (0 until 8).flatMap { file =>
       (0 until 8).map { rank =>
         board.boardState(rank)(file) match {
           case Some((piece, color)) =>
@@ -92,7 +113,7 @@ class GameGUI extends AbstractGUI with BoardView {
         }
 
       }
-    }.flatten: _*)
+    }.flatten.toMap
 
     run {
       boardData = newBoardData
@@ -100,6 +121,23 @@ class GameGUI extends AbstractGUI with BoardView {
       if (gamePanel != null)
         gamePanel.repaint()
     }
+  }
+
+  private def getBoardPos(x: Double, y: Double): Option[BoardPos] = {
+    val w = gamePanel.getWidth()
+    val h = gamePanel.getHeight()
+    val size = Math.min(w, h)
+
+    val xt = (x - (w - size) / 2) / size
+    val yt = (y - (h - size) / 2) / size
+
+    val file = (xt - borderWidth) / fieldSize
+    val rank = (yt - borderWidth) / fieldSize
+
+    if (file < 0 || file >= 8 || rank < 0 || rank >= 8)
+      None
+    else
+      Some(BoardPos(file.toInt, 7 - rank.toInt))
   }
 
   updateBoardData()
@@ -132,11 +170,46 @@ class GameGUI extends AbstractGUI with BoardView {
 
         paintBoard(g)
         paintPieces(g)
+        paintSelection(g)
 
         // Reset transform after painting
         g.setTransform(new AffineTransform)
       }
     }
+
+    gamePanel.addMouseListener(new MouseAdapter {
+      override def mouseClicked(e: MouseEvent): Unit = {
+        if (turn == None)
+          return
+
+        (getBoardPos(e.getX, e.getY), selected) match {
+          case (Some(pos), Some(sel)) if (sel == pos) =>
+            selected = None
+
+          case (Some(pos), _) if (boardData.get(pos).map(_._1) == turn) =>
+            selected = Some(pos)
+
+          case (Some(pos), Some(sel)) =>
+            moveChannel.write(Move(sel, pos, None))
+            selected = None
+            turn = None
+
+          case _ =>
+        }
+
+        gamePanel.repaint()
+      }
+    })
+
+    gamePanel.addMouseMotionListener(new MouseMotionAdapter {
+      override def mouseMoved(e: MouseEvent): Unit = {
+        val oldHover = hover
+        hover = getBoardPos(e.getX, e.getY)
+
+        if (hover != oldHover)
+          gamePanel.repaint()
+      }
+    })
 
     gamePanel.setPreferredSize(new Dimension(640, 640))
     gamePanel.setMinimumSize(new Dimension(10, 10))
@@ -203,18 +276,24 @@ class GameGUI extends AbstractGUI with BoardView {
     frame.setVisible(true)
   }
 
-  @tailrec
-  private def askForMove(): Move = {
-    println("Please enter move: ")
-    StdIn.readLine() match {
-      case Move.Match(move) => move
-      case _ =>
-        println("I don't understand")
-        askForMove()
+  def getMove(color: Color): Move = {
+    run {
+      turn = Some(color)
     }
+
+    moveChannel.read
   }
 
-  def getMove(): Move = askForMove()
+  def abortMove(): Unit = {
+    run {
+      turn = None
+    }
+
+    /* This will kill the game will a NullPointerException
+     * (which is caught by the Game's ExecutionContext)
+     */
+    moveChannel.write(null)
+  }
 
   def showMessage(message: String): Unit = run {
     if (statusArea == null)
