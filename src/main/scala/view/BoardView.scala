@@ -46,7 +46,7 @@ trait BoardView extends GameSubscriber {
           if (direction < 0)
             (new BoardPos(7, rank), new BoardPos(5, rank))
           else
-            (new BoardPos(0, rank), new BoardPos(2, rank))
+            (new BoardPos(0, rank), new BoardPos(3, rank))
 
         List(SimpleMove(src, dest, King),
           SimpleMove(rookSrc, rookDest, Rook))
