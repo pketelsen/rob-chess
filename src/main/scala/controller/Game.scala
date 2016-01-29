@@ -16,6 +16,7 @@ import model.Black
 case class GameEvent(move: Move, result: Option[Result])
 
 trait GameSubscriber {
+  def showMessage(message: String): Unit
   def handle(event: GameEvent): Future[Unit]
 }
 
@@ -35,6 +36,10 @@ class Game(white: Player, black: Player) {
   }
 
   def subscribe(sub: GameSubscriber) = subscribers += sub
+
+  def showMessage(message: String): Unit = {
+    subscribers.foreach(_.showMessage(message))
+  }
 
   @tailrec
   private def makeTurn(player: Player, wasInvalid: Boolean = false): Move = {

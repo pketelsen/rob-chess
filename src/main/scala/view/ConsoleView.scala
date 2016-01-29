@@ -19,6 +19,10 @@ object ConsoleView extends BoardView {
     super.handle(event)
   }
 
+  def showMessage(message: String): Unit = {
+    println(message)
+  }
+
   def handleActions(l: List[Action]): Future[Unit] = {
     println(board)
     Future.successful(())

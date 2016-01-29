@@ -9,6 +9,7 @@ import scala.collection.mutable.ListBuffer
 import robot.RobotControl
 
 class RobotView(rc: RobotControl) extends BoardView {
+  def showMessage(message: String): Unit = ()
 
   @tailrec
   final def handleActions(l: List[Action]): Future[Unit] = {

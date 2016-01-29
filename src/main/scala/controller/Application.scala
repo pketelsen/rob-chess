@@ -70,8 +70,8 @@ object Application {
         //TODO tell robot view to reset the board
         Some(state)
 
-      case (StateRunning(gameGUI, _, _), MessageEvent(message)) =>
-        gameGUI.showMessage(message)
+      case (StateRunning(_, _, game), MessageEvent(message)) =>
+        game.showMessage(message)
         Some(state)
 
       case (StateRunning(_, _, game), QuitEvent) =>
