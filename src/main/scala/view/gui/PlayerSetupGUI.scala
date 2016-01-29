@@ -19,6 +19,8 @@ import javax.swing.JLabel
 import controller.QuitEvent
 
 class PlayerSetupGUI extends AbstractGUI(" • player setup") {
+  initialize()
+
   def setupGUI(frame: JFrame) {
     val l = new GroupLayout(frame.getContentPane())
     frame.getContentPane().setLayout(l)
