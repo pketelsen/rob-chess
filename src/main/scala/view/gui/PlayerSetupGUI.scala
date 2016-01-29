@@ -19,10 +19,9 @@ import javax.swing.JLabel
 import controller.QuitEvent
 
 class PlayerSetupGUI extends AbstractGUI(" • player setup") {
-  // Inner block to make variables local to the constructor
-  {
-    val l = new GroupLayout(getContentPane())
-    getContentPane().setLayout(l)
+  def setupGUI(frame: JFrame) {
+    val l = new GroupLayout(frame.getContentPane())
+    frame.getContentPane().setLayout(l)
 
     l.setAutoCreateGaps(true)
     l.setAutoCreateContainerGaps(true)
@@ -42,7 +41,7 @@ class PlayerSetupGUI extends AbstractGUI(" • player setup") {
           PlayerInfo(choiceWhite.getSelectedItem.asInstanceOf[PlayerType]),
           PlayerInfo(choiceBlack.getSelectedItem.asInstanceOf[PlayerType])))
 
-        dispose()
+        frame.dispose()
       }
     })
 
@@ -63,7 +62,7 @@ class PlayerSetupGUI extends AbstractGUI(" • player setup") {
     vGroup.addComponent(startButton)
     l.setVerticalGroup(vGroup)
 
-    pack()
-    setVisible(true)
+    frame.pack()
+    frame.setVisible(true)
   }
 }
