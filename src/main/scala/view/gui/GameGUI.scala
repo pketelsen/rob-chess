@@ -10,7 +10,7 @@ import view.Action
 import scala.concurrent.Future
 import scala.annotation.tailrec
 
-class GameGUI extends JFrame with BoardView {
+class GameGUI extends AbstractGUI with BoardView {
   @tailrec
   private def askForMove(): Move = {
     println("Please enter move: ")
