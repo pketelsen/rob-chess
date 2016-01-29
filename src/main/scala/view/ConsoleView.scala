@@ -14,13 +14,6 @@ object ConsoleView extends BoardView {
   override def handle(event: GameEvent): Future[Unit] = {
     println(s"${turn} made move ${event.move}")
 
-    event.result match {
-      case Some(ResultWhiteWins(message)) => println(s"White wins: $message")
-      case Some(ResultBlackWins(message)) => println(s"Black wins: $message")
-      case Some(ResultDraw(message)) => println(s"Draw: $message")
-      case _ =>
-    }
-
     turn = turn.other
 
     super.handle(event)

@@ -19,7 +19,7 @@ case class StartGameEvent(
 
 case object NextTurnEvent extends ApplicationEvent
 
-case class EndGameEvent(result: Result)
+case object EndGameEvent
   extends ApplicationEvent
 
 case class MessageEvent(message: String) extends ApplicationEvent

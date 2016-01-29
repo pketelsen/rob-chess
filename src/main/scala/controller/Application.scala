@@ -65,7 +65,7 @@ object Application {
 
         Some(state)
 
-      case (StateRunning(_, robot, game), EndGameEvent(_)) =>
+      case (StateRunning(_, robot, game), EndGameEvent) =>
         queueEvent(QuitEvent)
         //TODO tell robot view to reset the board
         Some(state)

@@ -65,8 +65,14 @@ class Game(white: Player, black: Player) {
         Application.queueEvent(NextTurnEvent)
 
       case Some(result) =>
+        result match {
+          case ResultWhiteWins(message) => Application.showMessage(s"White wins: $message")
+          case ResultBlackWins(message) => Application.showMessage(s"Black wins: $message")
+          case ResultDraw(message) => Application.showMessage(s"Draw: $message")
+        }
+
         publishAndWait(move, Some(result))
-        Application.queueEvent(EndGameEvent(result))
+        Application.queueEvent(EndGameEvent)
     }
   }(executionContext)
 
