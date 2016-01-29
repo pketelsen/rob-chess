@@ -38,7 +38,7 @@ class GameGUI extends AbstractGUI with BoardView {
   private val whiteBgColor = new awt.Color(0.8f, 0.8f, 0.8f)
   private val blackBgColor = new awt.Color(0.6f, 0.6f, 0.6f)
   private val selectionColor = new awt.Color(1.0f, 1.0f, 1.0f)
-  private val hoverColor = new awt.Color(0.9f, 0.9f, 0.9f, 0.15f)
+  private val hoverColor = new awt.Color(1.0f, 1.0f, 1.0f, 0.15f)
 
   private var gamePanel: JPanel = null
   private var gameHistoryArea: JTextArea = null
@@ -72,8 +72,11 @@ class GameGUI extends AbstractGUI with BoardView {
 
     hover.foreach {
       case BoardPos(file, rank) =>
-        g.setColor(hoverColor)
-        g.fill(new Rectangle2D.Double(file, 7 - rank, 1, 1))
+        if (selected.isDefined ||
+            boardData.get(BoardPos(file, rank)).map(_._1) == turn) {
+          g.setColor(hoverColor)
+          g.fill(new Rectangle2D.Double(file, 7 - rank, 1, 1))
+        }
     }
   }
 
