@@ -1,6 +1,7 @@
 libraryDependencies  ++= Seq(
   "org.scalanlp" %% "breeze" % "0.11.2",
-  "org.scalanlp" %% "breeze-natives" % "0.11.2"
+  "org.scalanlp" %% "breeze-natives" % "0.11.2",
+  "com.kitfox.svg" % "svg-salamander" % "1.0"
 )
 
 resolvers ++= Seq(

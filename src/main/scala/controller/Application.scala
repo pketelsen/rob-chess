@@ -53,7 +53,7 @@ object Application {
         val game = new Game(white, black)
 
         game.subscribe(ConsoleView)
-        //game.subscribe(gameGUI)
+        game.subscribe(gameGUI)
         robot.foreach(game.subscribe(_))
 
         game.run()
