@@ -2,7 +2,6 @@ package controller
 
 import scala.annotation.tailrec
 import scala.concurrent.Channel
-
 import controller.logic.CECPPlayer
 import javax.swing.UIManager
 import model.Black
@@ -13,6 +12,7 @@ import view.RobotView
 import view.gui.GameGUI
 import view.gui.PlayerSetupGUI
 import view.gui.RobotSetupGUI
+import java.awt.Toolkit
 
 object Application {
   private trait State
@@ -101,6 +101,16 @@ object Application {
   def main(args: Array[String]) = {
     try {
       UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
+    } catch {
+      case (e: Exception) =>
+    }
+
+    try {
+      val xToolkit = Toolkit.getDefaultToolkit()
+      val awtAppClassNameField =
+        xToolkit.getClass().getDeclaredField("awtAppClassName")
+      awtAppClassNameField.setAccessible(true)
+      awtAppClassNameField.set(xToolkit, "rob-chess")
     } catch {
       case (e: Exception) =>
     }
