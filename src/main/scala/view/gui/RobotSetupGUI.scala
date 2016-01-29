@@ -1,4 +1,4 @@
-package gui
+package view.gui
 
 import controller.Application
 import controller.RobotSetupEvent

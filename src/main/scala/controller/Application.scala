@@ -2,17 +2,17 @@ package controller
 
 import scala.annotation.tailrec
 import scala.concurrent.Channel
+
 import controller.logic.CECPPlayer
-import gui.PlayerSetupGUI
-import robot.RobotControl
-import view.RobotView
-import gui.RobotSetupGUI
-import gui.GameGUI
+import javax.swing.UIManager
+import model.Black
 import model.Color
 import model.White
-import model.Black
 import view.ConsoleView
-import javax.swing.UIManager
+import view.RobotView
+import view.gui.GameGUI
+import view.gui.PlayerSetupGUI
+import view.gui.RobotSetupGUI
 
 object Application {
   private trait State

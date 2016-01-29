@@ -1,7 +1,8 @@
 package controller
 
-import model._
-import gui.GameGUI
+import model.Color
+import model.Move
+import view.gui.GameGUI
 
 
 abstract sealed class PlayerType

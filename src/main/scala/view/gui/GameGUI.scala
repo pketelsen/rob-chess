@@ -1,4 +1,4 @@
-package gui
+package view.gui
 
 import scala.io.StdIn
 import controller.logic.CECP
