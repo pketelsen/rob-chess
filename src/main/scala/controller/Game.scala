@@ -42,13 +42,29 @@ class Game(white: Player, black: Player) {
   }
 
   @tailrec
-  private def makeTurn(player: Player, wasInvalid: Boolean = false): Move = {
-    val move = player.getMove(wasInvalid)
+  private def attemptMoves(moves: List[Move]): Option[Move] = {
+    moves match {
+      case move :: moves =>
+        if (logic.attemptMove(move))
+          Some(move)
+        else
+          attemptMoves(moves)
 
-    if (logic.attemptMove(move))
-      move
-    else
-      makeTurn(player, true)
+      case Nil =>
+        None
+    }
+  }
+
+  @tailrec
+  private def makeTurn(player: Player, wasInvalid: Boolean = false): Move = {
+    val moves = player.getMove(wasInvalid)
+
+    attemptMoves(moves) match {
+      case Some(move) =>
+        move
+      case None =>
+        makeTurn(player, true)
+    }
   }
 
   def run(): Unit = Future {

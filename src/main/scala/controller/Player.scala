@@ -22,16 +22,16 @@ abstract trait Player {
   /**
    * Gets a move from the player
    *
-   * Returns None when the game is aborted
+   * The returned moves are tried one after another
    */
-  def getMove(wasInvalid: Boolean): Move
+  def getMove(wasInvalid: Boolean): List[Move]
 
   def destroy(): Unit
 }
 
 class HumanPlayer(val color: Color, gui: GameGUI) extends Player {
   def opponentMove(move: Move): Unit = ()
-  def getMove(wasInvalid: Boolean): Move = {
+  def getMove(wasInvalid: Boolean): List[Move] = {
     if (wasInvalid)
       Application.showMessage(s"Invalid move! Try again, ${color}.")
     else

@@ -154,12 +154,12 @@ class CECPPlayer(val color: Color) extends CECP(color.toString()) with Player {
     }
   }
 
-  def getMove(wasInvalid: Boolean): Move = {
+  def getMove(wasInvalid: Boolean): List[Move] = {
     if (wasInvalid)
       throw new RuntimeException("Engine rejected CECP AI player move")
 
     Application.showMessage("AI is thinking...")
 
-    waitForMove()
+    List(waitForMove())
   }
 }

@@ -27,6 +27,7 @@ import java.awt.BasicStroke
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.awt.event.MouseMotionAdapter
+import model.Queen
 
 class GameGUI extends AbstractGUI with BoardView {
   private val borderWidth = 0.015
@@ -48,7 +49,8 @@ class GameGUI extends AbstractGUI with BoardView {
   private var turn: Option[Color] = None
   private var hover: Option[BoardPos] = None
   private var selected: Option[BoardPos] = None
-  private val moveChannel: Channel[Move] = new Channel[Move]
+  private var promotion: Piece = Queen
+  private val moveChannel = new Channel[List[Move]]
 
   // To avoid accessing a mutable sequence from the Swing thread
   private var boardData: Map[BoardPos, (Color, Piece)] = Map()
@@ -190,7 +192,9 @@ class GameGUI extends AbstractGUI with BoardView {
             selected = Some(pos)
 
           case (Some(pos), Some(sel)) =>
-            moveChannel.write(Move(sel, pos, None))
+            moveChannel.write(List(
+              Move(sel, pos, Some(promotion)),
+              Move(sel, pos, None)))
             selected = None
             turn = None
 
@@ -276,7 +280,7 @@ class GameGUI extends AbstractGUI with BoardView {
     frame.setVisible(true)
   }
 
-  def getMove(color: Color): Move = {
+  def getMove(color: Color): List[Move] = {
     run {
       turn = Some(color)
     }
