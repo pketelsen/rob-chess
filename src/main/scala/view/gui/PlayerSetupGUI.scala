@@ -16,48 +16,51 @@ import controller.PlayerInfo
 import controller.PlayerType
 
 class PlayerSetupGUI extends JFrame("rob-chess") {
-  private val l = new GroupLayout(getContentPane())
-  getContentPane().setLayout(l)
+  // Inner block to make variables local to the constructor
+  {
+    val l = new GroupLayout(getContentPane())
+    getContentPane().setLayout(l)
 
-  l.setAutoCreateGaps(true)
-  l.setAutoCreateContainerGaps(true)
+    l.setAutoCreateGaps(true)
+    l.setAutoCreateContainerGaps(true)
 
-  val choices: Array[PlayerType] = Array(PlayerTypeHuman, PlayerTypeAI)
+    val choices: Array[PlayerType] = Array(PlayerTypeHuman, PlayerTypeAI)
 
-  val labelWhite = new JLabel("White")
-  val labelBlack = new JLabel("Black")
-  val choiceWhite = new JComboBox[PlayerType](choices)
-  val choiceBlack = new JComboBox[PlayerType](choices)
-  choiceBlack.setSelectedIndex(1)
+    val labelWhite = new JLabel("White")
+    val labelBlack = new JLabel("Black")
+    val choiceWhite = new JComboBox[PlayerType](choices)
+    val choiceBlack = new JComboBox[PlayerType](choices)
+    choiceBlack.setSelectedIndex(1)
 
-  val startButton = new JButton("Start game")
-  startButton.addActionListener(new ActionListener {
-    def actionPerformed(e: ActionEvent): Unit = {
-      setVisible(false)
+    val startButton = new JButton("Start game")
+    startButton.addActionListener(new ActionListener {
+      def actionPerformed(e: ActionEvent): Unit = {
+        Application.queueEvent(StartGameEvent(
+          PlayerInfo(choiceWhite.getSelectedItem.asInstanceOf[PlayerType]),
+          PlayerInfo(choiceBlack.getSelectedItem.asInstanceOf[PlayerType])))
 
-      Application.queueEvent(StartGameEvent(
-        PlayerInfo(choiceWhite.getSelectedItem.asInstanceOf[PlayerType]),
-        PlayerInfo(choiceBlack.getSelectedItem.asInstanceOf[PlayerType])))
-    }
-  })
+        dispose()
+      }
+    })
 
-  val hGroup = l.createSequentialGroup();
+    val hGroup = l.createSequentialGroup();
 
-  hGroup.addGroup(l.createParallelGroup().
-    addComponent(labelWhite).addComponent(labelBlack))
-  hGroup.addGroup(l.createParallelGroup(GroupLayout.Alignment.TRAILING).
-    addComponent(choiceWhite).addComponent(choiceBlack).addComponent(startButton))
-  l.setHorizontalGroup(hGroup)
+    hGroup.addGroup(l.createParallelGroup().
+      addComponent(labelWhite).addComponent(labelBlack))
+    hGroup.addGroup(l.createParallelGroup(GroupLayout.Alignment.TRAILING).
+      addComponent(choiceWhite).addComponent(choiceBlack).addComponent(startButton))
+    l.setHorizontalGroup(hGroup)
 
-  val vGroup = l.createSequentialGroup();
+    val vGroup = l.createSequentialGroup();
 
-  vGroup.addGroup(l.createParallelGroup(Alignment.BASELINE).
-    addComponent(labelWhite).addComponent(choiceWhite))
-  vGroup.addGroup(l.createParallelGroup(Alignment.BASELINE).
-    addComponent(labelBlack).addComponent(choiceBlack))
-  vGroup.addComponent(startButton)
-  l.setVerticalGroup(vGroup)
+    vGroup.addGroup(l.createParallelGroup(Alignment.BASELINE).
+      addComponent(labelWhite).addComponent(choiceWhite))
+    vGroup.addGroup(l.createParallelGroup(Alignment.BASELINE).
+      addComponent(labelBlack).addComponent(choiceBlack))
+    vGroup.addComponent(startButton)
+    l.setVerticalGroup(vGroup)
 
-  pack()
-  setVisible(true)
+    pack()
+    setVisible(true)
+  }
 }
