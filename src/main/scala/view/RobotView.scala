@@ -10,6 +10,7 @@ import robot.RobotControl
 
 class RobotView(rc: RobotControl) extends BoardView {
   def showMessage(message: String): Unit = ()
+  def AIMove(): Unit = ()
 
   @tailrec
   final def handleActions(l: List[Action]): Future[Unit] = {

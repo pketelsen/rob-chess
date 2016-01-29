@@ -17,6 +17,7 @@ case class GameEvent(move: Move, result: Option[Result])
 
 trait GameSubscriber {
   def showMessage(message: String): Unit
+  def AIMove(): Unit
   def handle(event: GameEvent): Future[Unit]
 }
 
@@ -41,6 +42,10 @@ class Game(white: Player, black: Player) {
     subscribers.foreach(_.showMessage(message))
   }
 
+  def AIMove(): Unit = {
+    subscribers.foreach(_.AIMove())
+  }
+
   @tailrec
   private def attemptMoves(moves: List[Move]): Option[Move] = {
     moves match {
@@ -61,6 +66,7 @@ class Game(white: Player, black: Player) {
 
     attemptMoves(moves) match {
       case Some(move) =>
+        player.acceptMove()
         move
       case None =>
         makeTurn(player, true)

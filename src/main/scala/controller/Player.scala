@@ -26,11 +26,14 @@ abstract trait Player {
    */
   def getMove(wasInvalid: Boolean): List[Move]
 
+  def acceptMove(): Unit
+
   def destroy(): Unit
 }
 
 class HumanPlayer(val color: Color, gui: GameGUI) extends Player {
   def opponentMove(move: Move): Unit = ()
+
   def getMove(wasInvalid: Boolean): List[Move] = {
     if (wasInvalid)
       Application.showMessage(s"Invalid move! Try again, ${color}.")
@@ -38,6 +41,10 @@ class HumanPlayer(val color: Color, gui: GameGUI) extends Player {
       Application.showMessage(s"${color} to move.")
 
     gui.getMove(color)
+  }
+
+  def acceptMove(): Unit = {
+    gui.acceptMove()
   }
 
   def destroy(): Unit = {

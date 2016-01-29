@@ -3,17 +3,12 @@ package controller.logic
 import scala.annotation.tailrec
 import scala.collection.mutable.Queue
 import scala.sys.process.stringSeqToProcess
+
+import controller.AIMoveEvent
 import controller.Application
 import controller.Player
-import model.Bishop
-import model.BoardPos
-import model.King
-import model.Knight
-import model.Move
-import model.Piece
-import model.Queen
-import model.Rook
 import model.Color
+import model.Move
 import model.White
 
 /**
@@ -130,6 +125,8 @@ class CECPPlayer(val color: Color) extends CECP(color.toString()) with Player {
       throw new RuntimeException("CECP AI player rejected valid move")
   }
 
+  def acceptMove(): Unit = ()
+
   protected def handleLine(line: String): Unit = {
     line match {
       case CECP.patternAIMove(m) =>
@@ -159,6 +156,7 @@ class CECPPlayer(val color: Color) extends CECP(color.toString()) with Player {
       throw new RuntimeException("Engine rejected CECP AI player move")
 
     Application.showMessage("AI is thinking...")
+    Application.queueEvent(AIMoveEvent)
 
     List(waitForMove())
   }

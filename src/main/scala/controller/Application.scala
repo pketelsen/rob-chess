@@ -70,6 +70,10 @@ object Application {
         //TODO tell robot view to reset the board
         Some(state)
 
+      case (StateRunning(_, _, game), AIMoveEvent) =>
+        game.AIMove()
+        Some(state)
+
       case (StateRunning(_, _, game), MessageEvent(message)) =>
         game.showMessage(message)
         Some(state)

@@ -22,6 +22,9 @@ case object NextTurnEvent extends ApplicationEvent
 case object EndGameEvent
   extends ApplicationEvent
 
+case object AIMoveEvent
+  extends ApplicationEvent
+
 case class MessageEvent(message: String) extends ApplicationEvent
 
 case object QuitEvent extends ApplicationEvent

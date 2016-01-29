@@ -23,6 +23,8 @@ object ConsoleView extends BoardView {
     println(message)
   }
 
+  def AIMove() = ()
+
   def handleActions(l: List[Action]): Future[Unit] = {
     println(board)
     Future.successful(())

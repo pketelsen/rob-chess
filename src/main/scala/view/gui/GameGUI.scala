@@ -1,33 +1,47 @@
 package view.gui
 
 import java.awt
+import java.awt.BasicStroke
 import java.awt.Dimension
 import java.awt.Graphics
 import java.awt.Graphics2D
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
+import java.awt.GridLayout
 import java.awt.RenderingHints
+import java.awt.event.ActionEvent
+import java.awt.event.ActionListener
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
+import java.awt.event.MouseMotionAdapter
 import java.awt.geom.AffineTransform
 import java.awt.geom.Rectangle2D
+
+import scala.collection.mutable
 import scala.concurrent.Channel
 import scala.concurrent.Future
+
+import com.kitfox.svg.app.beans.SVGIcon
+
 import javax.swing.JButton
 import javax.swing.JFrame
 import javax.swing.JPanel
 import javax.swing.JScrollPane
 import javax.swing.JTextArea
+import javax.swing.JToggleButton
 import javax.swing.ScrollPaneConstants
+import model.Bishop
+import model.Black
 import model.BoardPos
 import model.Color
+import model.Knight
 import model.Move
 import model.Piece
+import model.Queen
+import model.Rook
+import model.White
 import view.Action
 import view.BoardView
-import java.awt.BasicStroke
-import java.awt.event.MouseAdapter
-import java.awt.event.MouseEvent
-import java.awt.event.MouseMotionAdapter
-import model.Queen
 
 class GameGUI extends AbstractGUI with BoardView {
   private val borderWidth = 0.015
@@ -44,12 +58,15 @@ class GameGUI extends AbstractGUI with BoardView {
   private var gameHistoryArea: JTextArea = null
   private var statusArea: JTextArea = null
 
+  private val promotionIcons = mutable.Map[(Color, Piece), SVGIcon]()
+  private val promotionButtons = mutable.Map[Piece, JToggleButton]()
+
   private var svg: SVG = null
 
   private var turn: Option[Color] = None
   private var hover: Option[BoardPos] = None
   private var selected: Option[BoardPos] = None
-  private var promotion: Piece = Queen
+  private val promotion = mutable.Map[Color, Piece](White -> Queen, Black -> Queen)
   private val moveChannel = new Channel[List[Move]]
 
   // To avoid accessing a mutable sequence from the Swing thread
@@ -73,7 +90,7 @@ class GameGUI extends AbstractGUI with BoardView {
     hover.foreach {
       case BoardPos(file, rank) =>
         if (selected.isDefined ||
-            boardData.get(BoardPos(file, rank)).map(_._1) == turn) {
+          boardData.get(BoardPos(file, rank)).map(_._1) == turn) {
           g.setColor(hoverColor)
           g.fill(new Rectangle2D.Double(file, 7 - rank, 1, 1))
         }
@@ -145,6 +162,41 @@ class GameGUI extends AbstractGUI with BoardView {
       Some(BoardPos(file.toInt, 7 - rank.toInt))
   }
 
+  private def updatePromotion(): Unit = {
+    promotionButtons.foreach {
+      case (piece, button) =>
+        turn match {
+          case Some(color) =>
+            button.setEnabled(true)
+            button.setIcon(promotionIcons((color, piece)))
+            button.setSelected(piece == promotion(color))
+
+          case None =>
+            button.setEnabled(false)
+        }
+    }
+  }
+
+  private def createPromotionButton(piece: Piece): JToggleButton = {
+    promotionIcons((White, piece)) = svg.getIcon(White, piece)
+    promotionIcons((Black, piece)) = svg.getIcon(Black, piece)
+
+    val button = new JToggleButton(promotionIcons((White, piece)))
+
+    button.addActionListener(new ActionListener {
+      def actionPerformed(e: ActionEvent): Unit = {
+        turn.foreach(promotion(_) = piece)
+        updatePromotion()
+      }
+    })
+
+    button.setEnabled(false)
+
+    promotionButtons(piece) = button
+
+    button
+  }
+
   updateBoardData()
 
   def setupGUI(frame: JFrame) {
@@ -196,9 +248,8 @@ class GameGUI extends AbstractGUI with BoardView {
 
           case (Some(pos), Some(sel)) =>
             moveChannel.write(List(
-              Move(sel, pos, Some(promotion)),
+              Move(sel, pos, promotion.get(turn.get)),
               Move(sel, pos, None)))
-            selected = None
             turn = None
 
           case _ =>
@@ -230,7 +281,18 @@ class GameGUI extends AbstractGUI with BoardView {
     gameHistoryScrollPane.setVerticalScrollBarPolicy(
       ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS)
     gameHistoryScrollPane.setPreferredSize(new Dimension(150, 100))
-    gameHistoryScrollPane.setMinimumSize(new Dimension(10, 10))
+    gameHistoryScrollPane.setMinimumSize(new Dimension(150, 100))
+
+    val promotionPanel = new JPanel(new GridLayout(1, 0))
+    promotionPanel.setPreferredSize(new Dimension(64, 64))
+    promotionPanel.setMinimumSize(new Dimension(64, 64))
+
+    promotionPanel.add(createPromotionButton(Queen))
+    promotionPanel.add(createPromotionButton(Rook))
+    promotionPanel.add(createPromotionButton(Bishop))
+    promotionPanel.add(createPromotionButton(Knight))
+
+    updatePromotion()
 
     statusArea = new JTextArea
     statusArea.setEditable(false)
@@ -248,7 +310,7 @@ class GameGUI extends AbstractGUI with BoardView {
       c.weighty = 0.9
       c.gridx = 0
       c.gridy = 0
-      c.gridheight = 2
+      c.gridheight = 3
       c
     })
 
@@ -263,9 +325,17 @@ class GameGUI extends AbstractGUI with BoardView {
     frame.add(gameHistoryScrollPane, {
       val c = new GridBagConstraints
       c.fill = GridBagConstraints.BOTH
-      c.weightx = 0.1
+      c.weighty = 1
       c.gridx = 1
       c.gridy = 1
+      c
+    })
+
+    frame.add(promotionPanel, {
+      val c = new GridBagConstraints
+      c.fill = GridBagConstraints.BOTH
+      c.gridx = 1
+      c.gridy = 2
       c
     })
 
@@ -274,7 +344,7 @@ class GameGUI extends AbstractGUI with BoardView {
       c.fill = GridBagConstraints.BOTH
       c.weighty = 0.1
       c.gridx = 0
-      c.gridy = 2
+      c.gridy = 3
       c.gridwidth = 2
       c
     })
@@ -286,16 +356,25 @@ class GameGUI extends AbstractGUI with BoardView {
   def getMove(color: Color): List[Move] = {
     run {
       turn = Some(color)
+      updatePromotion()
     }
 
     moveChannel.read
   }
 
-  def abortMove(): Unit = {
+  def acceptMove(): Unit = {
     run {
-      turn = None
+      selected = None
     }
+  }
 
+  def AIMove(): Unit = {
+    run {
+      updatePromotion()
+    }
+  }
+
+  def abortMove(): Unit = {
     /* This will kill the game will a NullPointerException
      * (which is caught by the Game's ExecutionContext)
      */

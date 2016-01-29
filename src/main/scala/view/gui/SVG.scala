@@ -12,9 +12,12 @@ import model.Bishop
 import model.Queen
 import model.Rook
 import com.kitfox.svg.SVGDiagram
+import com.kitfox.svg.app.beans.SVGIcon
+import javax.swing.Icon
+import java.awt.Dimension
 
 class SVG {
-  private val svg = SVGCache.getSVGUniverse
+  private val universe = SVGCache.getSVGUniverse
 
   private def name(color: Color, piece: Piece): String = {
     val c = color match {
@@ -38,9 +41,19 @@ class SVG {
     (Seq(White, Black) flatMap { color =>
       Seq(Pawn, Rook, Knight, Bishop, Queen, King) map { piece =>
         val n = name(color, piece)
-        val diag = svg.getDiagram(svg.loadSVG(getClass.getResourceAsStream(s"/${n}.svg"), n))
+        val diag = universe.getDiagram(universe.loadSVG(getClass.getResourceAsStream(s"/${n}.svg"), n))
         ((color, piece), diag)
       }
     }).toMap
+  }
+
+  def getIcon(color: Color, piece: Piece): SVGIcon = {
+    val icon = new SVGIcon
+    icon.setSvgUniverse(universe)
+    icon.setSvgURI(universe.getStreamBuiltURI(name(color, piece)))
+    icon.setScaleToFit(true)
+    icon.setAntiAlias(true)
+    icon.setPreferredSize(new Dimension(32, 32))
+    icon
   }
 }
