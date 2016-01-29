@@ -12,6 +12,7 @@ import model.Color
 import model.White
 import model.Black
 import view.ConsoleView
+import javax.swing.UIManager
 
 object Application {
   private trait State
@@ -50,7 +51,7 @@ object Application {
         val black = mkPlayer(blackInfo, Black, gameGUI)
 
         val game = new Game(white, black)
-        
+
         game.subscribe(ConsoleView)
         //game.subscribe(gameGUI)
         robot.foreach(game.subscribe(_))
@@ -98,6 +99,12 @@ object Application {
   }
 
   def main(args: Array[String]) = {
+    try {
+      UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
+    } catch {
+      case (e: Exception) =>
+    }
+
     queueEvent(InitEvent)
     handleEvents(StateStart)
   }
