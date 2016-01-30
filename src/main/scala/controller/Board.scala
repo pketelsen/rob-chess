@@ -152,52 +152,58 @@ class Board {
   def move(move: Move): Future[Unit] = {
     val Move(src, dest, promotion) = move
 
-    val Some((srcPiece, color)) = this(src)
+    val Some((piece, color)) = this(src)
 
-    val baseActions: List[Action] = {
+    val pieceName = piece.toString.toUpperCase
+
+    val (baseActions: List[Action], baseString: String) = {
       if (this(dest) != None) { // NORMAL CAPTURE
         val Some((destPiece, destColor)) = this(dest)
-        List(
+        (List(
           CaptureMove(dest, destPiece, destColor),
-          SimpleMove(src, dest, srcPiece, color))
+          SimpleMove(src, dest, piece, color)),
+          s"${pieceName}${src}x${dest}")
 
-      } else if (srcPiece == King && 1 < Math.abs(src.file - dest.file)) { // CASTLING
+      } else if (piece == King && 1 < Math.abs(src.file - dest.file)) { // CASTLING
         val direction = src.file - dest.file
         val rank = src.rank
-        val (rookSrc, rookDest) =
+        val (rookSrc, rookDest, s) =
           if (direction < 0)
-            (new BoardPos(7, rank), new BoardPos(5, rank))
+            (new BoardPos(7, rank), new BoardPos(5, rank), "0-0")
           else
-            (new BoardPos(0, rank), new BoardPos(3, rank))
+            (new BoardPos(0, rank), new BoardPos(3, rank), "0-0-0")
 
-        List(
+        (List(
           SimpleMove(src, dest, King, color),
-          SimpleMove(rookSrc, rookDest, Rook, color))
+          SimpleMove(rookSrc, rookDest, Rook, color)), s)
 
-      } else if (srcPiece == Pawn && src.file != dest.file) { // EN PASSANT
-        List(
+      } else if (piece == Pawn && src.file != dest.file) { // EN PASSANT
+        (List(
           CaptureMove(BoardPos(dest.file, src.rank), Pawn, color.other),
-          SimpleMove(src, dest, Pawn, color))
+          SimpleMove(src, dest, Pawn, color)),
+          s"${pieceName}${src}x${dest}")
 
       } else { // NORMAL MOVE
-        List(SimpleMove(src, dest, srcPiece, color))
+        (List(SimpleMove(src, dest, piece, color)),
+          s"${pieceName}${src}-${dest}")
       }
     }
 
-    val promotionActions: List[Action] = promotion match {
-      case Some(piece) =>
-        List(
+    val (promotionActions: List[Action], promotionString: String) = promotion match {
+      case Some(promotionPiece) =>
+        (List(
           CaptureMove(dest, Pawn, color),
-          PromoteMove(dest, piece, color))
+          PromoteMove(dest, promotionPiece, color)),
+          promotionPiece.toString.toUpperCase)
 
       case None =>
-        List()
+        (List(), "")
     }
 
     val actions = baseActions ++ promotionActions
 
     modifyBoard(actions)
-    subscribers.foreach(_.handleMoveString(move.toString, color))
+    subscribers.foreach(_.handleMoveString(baseString + promotionString, color))
     handleActionsAndWait(actions)
   }
 }
