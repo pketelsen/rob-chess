@@ -12,6 +12,7 @@ import java.awt.GridBagLayout
 import java.awt.GridLayout
 import java.awt.LayoutManager
 import java.awt.RenderingHints
+import java.awt.Toolkit
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
 import java.awt.event.MouseAdapter
@@ -33,6 +34,7 @@ import javax.swing.JScrollPane
 import javax.swing.JTextArea
 import javax.swing.JToggleButton
 import javax.swing.ScrollPaneConstants
+import javax.swing.UIManager
 import model.Bishop
 import model.Black
 import model.BoardPos
@@ -418,5 +420,29 @@ class GameGUI extends AbstractGUI with BoardView {
   def handleActions(l: List[Action]): Future[Unit] = {
     updateBoardData()
     Future.successful(())
+  }
+}
+
+object GameGUI {
+  def initUI(): Unit = {
+    System.setProperty("awt.useSystemAAFontSettings", "on")
+    System.setProperty("swing.aatext", "true")
+
+    try {
+      UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
+    } catch {
+      case (e: Exception) =>
+    }
+
+    val tk = Toolkit.getDefaultToolkit()
+
+    try {
+      val awtAppClassNameField =
+        tk.getClass().getDeclaredField("awtAppClassName")
+      awtAppClassNameField.setAccessible(true)
+      awtAppClassNameField.set(tk, "rob-chess")
+    } catch {
+      case (e: Exception) =>
+    }
   }
 }
