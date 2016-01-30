@@ -23,7 +23,7 @@ abstract class AbstractGUI[T <: JFrame](initializeFrame: => T) {
     ret.get
   }
 
-  val frame: T = invoke(initializeFrame)
+  private val frame: T = invoke(initializeFrame)
 
   def run[R](f: T => R): R = invoke {
     f(frame)
