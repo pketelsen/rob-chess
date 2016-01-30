@@ -5,6 +5,7 @@ import java.awt.BasicStroke
 import java.awt.Component
 import java.awt.Container
 import java.awt.Dimension
+import java.awt.Font
 import java.awt.Graphics
 import java.awt.Graphics2D
 import java.awt.GridBagConstraints
@@ -32,12 +33,14 @@ import controller.BoardState
 import controller.BoardSubscriber
 import javax.swing.JButton
 import javax.swing.JFrame
+import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JScrollPane
 import javax.swing.JTextArea
 import javax.swing.JToggleButton
 import javax.swing.ScrollPaneConstants
 import javax.swing.UIManager
+import javax.swing.border.EmptyBorder
 import model.Bishop
 import model.Black
 import model.BoardPos
@@ -62,7 +65,7 @@ class GameGUI extends AbstractGUI with BoardSubscriber {
 
   private var gamePanel: JPanel = null
   private var gameHistoryArea: JTextArea = null
-  private var statusArea: JTextArea = null
+  private var statusLabel: JLabel = null
 
   private val promotionIcons = mutable.Map[(Color, Piece), SVGIcon]()
   private val promotionButtons = mutable.Map[Piece, JToggleButton]()
@@ -197,13 +200,6 @@ class GameGUI extends AbstractGUI with BoardSubscriber {
   def setupGUI(frame: JFrame) {
     svg = new SVG()
 
-    /* Board size: 680x680
-     * Width: board width * 5/4
-     * Height: board height * 20/17
-     */
-    frame.setPreferredSize(new Dimension(850, 800))
-    frame.setLayout(new GridBagLayout)
-
     gamePanel = new JPanel(null) {
       override def paint(graphics: Graphics): Unit = {
         if (boardState == null)
@@ -287,19 +283,23 @@ class GameGUI extends AbstractGUI with BoardSubscriber {
       promotionPanel.add(createPromotionButton(piece))
     }
 
-    statusArea = new JTextArea
-    statusArea.setEditable(false)
+    statusLabel = new JLabel(" ") // Non-empty content to get correct height
+    statusLabel.setFont(statusLabel.getFont().deriveFont(Font.BOLD, 20))
+    statusLabel.setBorder(new EmptyBorder(5, 10, 5, 10))
 
-    val statusScrollPane = new JScrollPane(statusArea)
-    statusScrollPane.setVerticalScrollBarPolicy(
-      ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS)
+    /* Board size: 680x680
+     * Width: board width * 5/4
+     * Height: board height + status label height
+     */
+    frame.setPreferredSize(new Dimension(850, 680 + statusLabel.getPreferredSize.height))
+    frame.setLayout(new GridBagLayout)
 
     gamePanel.setPreferredSize(new Dimension(0, 0))
     frame.add(gamePanel, {
       val c = new GridBagConstraints
       c.fill = GridBagConstraints.BOTH
       c.weightx = 0.8
-      c.weighty = 0.85
+      c.weighty = 1
       c.gridx = 0
       c.gridy = 0
       c
@@ -339,7 +339,7 @@ class GameGUI extends AbstractGUI with BoardSubscriber {
       val c = new GridBagConstraints
       c.fill = GridBagConstraints.BOTH
       c.weightx = 0.2
-      c.weighty = 0.15
+      c.weighty = 1
       c.gridx = 1
       c.gridy = 0
       c
@@ -349,12 +349,11 @@ class GameGUI extends AbstractGUI with BoardSubscriber {
     sidePanel.add(gameHistoryScrollPane)
     sidePanel.add(promotionPanel)
 
-    statusScrollPane.setPreferredSize(new Dimension(0, 0))
-    frame.add(statusScrollPane, {
+    frame.add(statusLabel, {
       val c = new GridBagConstraints
       c.fill = GridBagConstraints.BOTH
       c.weightx = 1
-      c.weighty = 0.15
+      c.weighty = 0
       c.gridx = 0
       c.gridy = 1
       c.gridwidth = 2
@@ -412,17 +411,10 @@ class GameGUI extends AbstractGUI with BoardSubscriber {
   }
 
   def showMessage(message: String): Unit = run {
-    if (statusArea == null)
+    if (statusLabel == null)
       return
 
-    val oldText = statusArea.getText()
-    val newText =
-      if (oldText == "")
-        message
-      else
-        oldText + "\n" + message
-
-    statusArea.setText(newText)
+    statusLabel.setText(message)
   }
 
   def resetBoard(board: BoardState): Unit = {

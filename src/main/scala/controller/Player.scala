@@ -36,7 +36,7 @@ class HumanPlayer(val color: Color, gui: GameGUI) extends Player {
 
   def getMove(wasInvalid: Boolean): List[Move] = {
     if (!wasInvalid)
-      Application.showMessage(s"${color} to move.")
+      Application.showMessage(s"${color} to move")
 
     gui.getMove(color)
   }
