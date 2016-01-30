@@ -2,6 +2,7 @@ package view
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.language.implicitConversions
 
@@ -51,13 +52,17 @@ class RobotView(rc: RobotControl) extends BoardSubscriber {
 
   def handleMoveString(move: String, color: Color): Unit = ()
 
+  def handleActions(l: List[Action], board: BoardState): Future[Unit] = Future {
+    doHandleActions(l, board)
+  }
+
   @tailrec
-  final def handleActions(l: List[Action], board: BoardState): Future[Unit] = {
+  private def doHandleActions(l: List[Action], board: BoardState): Unit = {
     l match {
       case head :: tail =>
         doAction(head)
-        handleActions(tail, board)
-      case Nil => Future.successful(())
+        doHandleActions(tail, board)
+      case Nil =>
     }
   }
 
