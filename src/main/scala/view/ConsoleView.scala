@@ -12,15 +12,13 @@ import model.White
 object ConsoleView extends BoardSubscriber {
   var counter = 1
 
+  println(BoardState())
+
   def showMessage(message: String): Unit = {
     println(message)
   }
 
   def AIMove(color: Color) = ()
-
-  def resetBoard(board: BoardState): Unit = {
-    println(board)
-  }
 
   def handleMoveString(move: String, color: Color): Unit = {
     color match {
@@ -28,7 +26,7 @@ object ConsoleView extends BoardSubscriber {
         println(s"${counter}. ${move}")
 
       case Black =>
-        println(s"${counter}. ... ${move}")
+        println(s"${counter}... ${move}")
         counter = counter + 1
     }
   }

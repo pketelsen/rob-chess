@@ -18,12 +18,12 @@ import javax.swing.JFrame
 import javax.swing.JLabel
 import controller.QuitEvent
 
-class PlayerSetupGUI extends AbstractGUI(" • player setup") {
-  initialize()
+class PlayerSetupGUI extends AbstractGUI[PlayerSetupGUIFrame](new PlayerSetupGUIFrame)
 
-  def setupGUI(frame: JFrame) {
-    val l = new GroupLayout(frame.getContentPane())
-    frame.getContentPane().setLayout(l)
+class PlayerSetupGUIFrame extends AbstractGUIFrame(" • player setup") {
+  {
+    val l = new GroupLayout(getContentPane())
+    getContentPane().setLayout(l)
 
     l.setAutoCreateGaps(true)
     l.setAutoCreateContainerGaps(true)
@@ -43,7 +43,7 @@ class PlayerSetupGUI extends AbstractGUI(" • player setup") {
           PlayerInfo(choiceWhite.getSelectedItem.asInstanceOf[PlayerType]),
           PlayerInfo(choiceBlack.getSelectedItem.asInstanceOf[PlayerType])))
 
-        frame.dispose()
+        dispose()
       }
     })
 
@@ -64,7 +64,7 @@ class PlayerSetupGUI extends AbstractGUI(" • player setup") {
     vGroup.addComponent(startButton)
     l.setVerticalGroup(vGroup)
 
-    frame.pack()
-    frame.setVisible(true)
+    pack()
+    setVisible(true)
   }
 }

@@ -9,28 +9,34 @@ import javax.swing.JFrame
 import javax.swing.SwingUtilities
 import javax.swing.WindowConstants
 
-abstract class AbstractGUI(subtitle: String = "") {
-  def run(f: => Unit): Unit = SwingUtilities.invokeAndWait(
-    new Runnable() {
-      def run() {
-        f
-      }
-    })
+abstract class AbstractGUI[T <: JFrame](initializeFrame: => T) {
+  private def invoke[R](f: => R): R = {
+    var ret: Option[R] = None
 
-  /** initialize is supposed to be run by constructors of child classes */
-  def initialize(): Unit = run {
-    val frame = new JFrame("rob-chess" + subtitle)
-    frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE)
+    SwingUtilities.invokeAndWait(
+      new Runnable() {
+        def run() {
+          ret = Some(f)
+        }
+      })
 
-    frame.addWindowListener(new WindowAdapter {
-      override def windowClosing(e: WindowEvent): Unit = {
-        Application.queueEvent(QuitEvent)
-        frame.dispose()
-      }
-    })
-
-    setupGUI(frame)
+    ret.get
   }
 
-  def setupGUI(frame: JFrame): Unit
+  val frame: T = invoke(initializeFrame)
+
+  def run[R](f: T => R): R = invoke {
+    f(frame)
+  }
+}
+
+abstract class AbstractGUIFrame(subtitle: String = "") extends JFrame("rob-chess" + subtitle) {
+  setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE)
+
+  addWindowListener(new WindowAdapter {
+    override def windowClosing(e: WindowEvent): Unit = {
+      Application.queueEvent(QuitEvent)
+      dispose()
+    }
+  })
 }

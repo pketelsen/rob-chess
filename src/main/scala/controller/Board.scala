@@ -96,7 +96,6 @@ object BoardState {
 trait BoardSubscriber {
   def showMessage(message: String): Unit
   def AIMove(color: Color): Unit
-  def resetBoard(board: BoardState): Unit
   def handleActions(actions: List[Action], board: BoardState): Future[Unit]
   def handleMoveString(move: String, color: Color): Unit
 }
@@ -108,7 +107,6 @@ class Board {
 
   def subscribe(sub: BoardSubscriber) = {
     subscribers += sub
-    sub.resetBoard(boardState)
   }
 
   def showMessage(message: String): Unit = {

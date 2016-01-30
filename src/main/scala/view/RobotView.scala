@@ -47,13 +47,6 @@ class RobotView(rc: RobotControl) extends BoardSubscriber {
   def showMessage(message: String): Unit = ()
   def AIMove(color: Color): Unit = ()
 
-  def resetBoard(board: BoardState): Unit = {
-    // TODO Implement
-    // Make this a future?
-
-    boardState = board
-  }
-
   def handleMoveString(move: String, color: Color): Unit = ()
 
   def handleActions(l: List[Action], board: BoardState): Future[Unit] = Future {

@@ -9,6 +9,7 @@ import model.Color
 import model.White
 import view.ConsoleView
 import view.RobotView
+import view.gui.GUI
 import view.gui.GameGUI
 import view.gui.PlayerSetupGUI
 import view.gui.RobotSetupGUI
@@ -102,7 +103,7 @@ object Application {
   }
 
   def main(args: Array[String]) = {
-    GameGUI.initUI()
+    GUI.init()
 
     queueEvent(InitEvent)
     handleEvents(StateStart)
