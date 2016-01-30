@@ -2,12 +2,15 @@ package view.gui
 
 import java.awt
 import java.awt.BasicStroke
+import java.awt.Component
+import java.awt.Container
 import java.awt.Dimension
 import java.awt.Graphics
 import java.awt.Graphics2D
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.GridLayout
+import java.awt.LayoutManager
 import java.awt.RenderingHints
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
@@ -90,7 +93,8 @@ class GameGUI extends AbstractGUI with BoardView {
     hover.foreach {
       case BoardPos(file, rank) =>
         if (selected.isDefined ||
-          boardData.get(BoardPos(file, rank)).map(_._1) == turn) {
+          (turn != None &&
+            boardData.get(BoardPos(file, rank)).map(_._1) == turn)) {
           g.setColor(hoverColor)
           g.fill(new Rectangle2D.Double(file, 7 - rank, 1, 1))
         }
@@ -162,17 +166,17 @@ class GameGUI extends AbstractGUI with BoardView {
       Some(BoardPos(file.toInt, 7 - rank.toInt))
   }
 
-  private def updatePromotion(): Unit = {
+  private def updatePromotion(color: Color): Unit = {
     promotionButtons.foreach {
       case (piece, button) =>
-        turn match {
-          case Some(color) =>
-            button.setEnabled(true)
-            button.setIcon(promotionIcons((color, piece)))
-            button.setSelected(piece == promotion(color))
+        button.setIcon(promotionIcons((color, piece)))
 
-          case None =>
-            button.setEnabled(false)
+        if (turn == None) {
+          button.setEnabled(false)
+          button.setSelected(false)
+        } else {
+          button.setEnabled(true)
+          button.setSelected(piece == promotion(color))
         }
     }
   }
@@ -185,8 +189,10 @@ class GameGUI extends AbstractGUI with BoardView {
 
     button.addActionListener(new ActionListener {
       def actionPerformed(e: ActionEvent): Unit = {
-        turn.foreach(promotion(_) = piece)
-        updatePromotion()
+        turn.foreach { color =>
+          promotion(color) = piece
+          updatePromotion(color)
+        }
       }
     })
 
@@ -202,6 +208,11 @@ class GameGUI extends AbstractGUI with BoardView {
   def setupGUI(frame: JFrame) {
     svg = new SVG()
 
+    /* Board size: 680x680
+     * Width: board width * 5/4
+     * Height: board height * 20/17
+     */
+    frame.setPreferredSize(new Dimension(850, 800))
     frame.setLayout(new GridBagLayout)
 
     gamePanel = new JPanel(null) {
@@ -269,9 +280,6 @@ class GameGUI extends AbstractGUI with BoardView {
       }
     })
 
-    gamePanel.setPreferredSize(new Dimension(640, 640))
-    gamePanel.setMinimumSize(new Dimension(10, 10))
-
     val newGameButton = new JButton("New game")
 
     gameHistoryArea = new JTextArea
@@ -280,19 +288,12 @@ class GameGUI extends AbstractGUI with BoardView {
     val gameHistoryScrollPane = new JScrollPane(gameHistoryArea)
     gameHistoryScrollPane.setVerticalScrollBarPolicy(
       ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS)
-    gameHistoryScrollPane.setPreferredSize(new Dimension(150, 100))
-    gameHistoryScrollPane.setMinimumSize(new Dimension(150, 100))
 
     val promotionPanel = new JPanel(new GridLayout(1, 0))
-    promotionPanel.setPreferredSize(new Dimension(64, 64))
-    promotionPanel.setMinimumSize(new Dimension(64, 64))
 
-    promotionPanel.add(createPromotionButton(Queen))
-    promotionPanel.add(createPromotionButton(Rook))
-    promotionPanel.add(createPromotionButton(Bishop))
-    promotionPanel.add(createPromotionButton(Knight))
-
-    updatePromotion()
+    Seq(Queen, Rook, Bishop, Knight).foreach { piece =>
+      promotionPanel.add(createPromotionButton(piece))
+    }
 
     statusArea = new JTextArea
     statusArea.setEditable(false)
@@ -300,51 +301,70 @@ class GameGUI extends AbstractGUI with BoardView {
     val statusScrollPane = new JScrollPane(statusArea)
     statusScrollPane.setVerticalScrollBarPolicy(
       ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS)
-    statusScrollPane.setPreferredSize(new Dimension(150, 100))
-    statusScrollPane.setMinimumSize(new Dimension(10, 10))
 
+    gamePanel.setPreferredSize(new Dimension(0, 0))
     frame.add(gamePanel, {
       val c = new GridBagConstraints
       c.fill = GridBagConstraints.BOTH
-      c.weightx = 0.9
-      c.weighty = 0.9
+      c.weightx = 0.8
+      c.weighty = 0.85
       c.gridx = 0
       c.gridy = 0
-      c.gridheight = 3
       c
     })
 
-    frame.add(newGameButton, {
+    val sidePanel = new JPanel(new LayoutManager {
+      def addLayoutComponent(name: String, comp: Component): Unit = ()
+      def removeLayoutComponent(comp: Component): Unit = ()
+
+      def preferredLayoutSize(parent: Container): Dimension =
+        new Dimension(0, 0)
+
+      def minimumLayoutSize(parent: Container): Dimension =
+        new Dimension(0, 0)
+
+      // Very hacky, but simple
+      def layoutContainer(parent: Container) {
+        val width = parent.getWidth
+        val height = parent.getHeight
+        val promotionPanelHeight = width / 4
+
+        val newGameButtonHeight = newGameButton.getPreferredSize.height
+        newGameButton.setBounds(0, 0, width, newGameButtonHeight)
+
+        gameHistoryScrollPane.setBounds(0, newGameButtonHeight, width, height - newGameButtonHeight - promotionPanelHeight)
+
+        promotionPanel.setBounds(0, height - promotionPanelHeight, width, promotionPanelHeight)
+
+        promotionIcons.values.foreach {
+          _.setPreferredSize(new Dimension(promotionPanelHeight * 2 / 3, promotionPanelHeight * 2 / 3))
+        }
+      }
+    })
+
+    sidePanel.setPreferredSize(new Dimension(0, 0))
+    frame.add(sidePanel, {
       val c = new GridBagConstraints
       c.fill = GridBagConstraints.BOTH
+      c.weightx = 0.2
+      c.weighty = 0.15
       c.gridx = 1
       c.gridy = 0
       c
     })
 
-    frame.add(gameHistoryScrollPane, {
-      val c = new GridBagConstraints
-      c.fill = GridBagConstraints.BOTH
-      c.weighty = 1
-      c.gridx = 1
-      c.gridy = 1
-      c
-    })
+    sidePanel.add(newGameButton)
+    sidePanel.add(gameHistoryScrollPane)
+    sidePanel.add(promotionPanel)
 
-    frame.add(promotionPanel, {
-      val c = new GridBagConstraints
-      c.fill = GridBagConstraints.BOTH
-      c.gridx = 1
-      c.gridy = 2
-      c
-    })
-
+    statusScrollPane.setPreferredSize(new Dimension(0, 0))
     frame.add(statusScrollPane, {
       val c = new GridBagConstraints
       c.fill = GridBagConstraints.BOTH
-      c.weighty = 0.1
+      c.weightx = 1
+      c.weighty = 0.15
       c.gridx = 0
-      c.gridy = 3
+      c.gridy = 1
       c.gridwidth = 2
       c
     })
@@ -356,7 +376,7 @@ class GameGUI extends AbstractGUI with BoardView {
   def getMove(color: Color): List[Move] = {
     run {
       turn = Some(color)
-      updatePromotion()
+      updatePromotion(color)
     }
 
     moveChannel.read
@@ -368,9 +388,9 @@ class GameGUI extends AbstractGUI with BoardView {
     }
   }
 
-  def AIMove(): Unit = {
+  def AIMove(color: Color): Unit = {
     run {
-      updatePromotion()
+      updatePromotion(color)
     }
   }
 

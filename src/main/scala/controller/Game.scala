@@ -17,7 +17,7 @@ case class GameEvent(move: Move, result: Option[Result])
 
 trait GameSubscriber {
   def showMessage(message: String): Unit
-  def AIMove(): Unit
+  def AIMove(color: Color): Unit
   def handle(event: GameEvent): Future[Unit]
 }
 
@@ -43,7 +43,7 @@ class Game(white: Player, black: Player) {
   }
 
   def AIMove(): Unit = {
-    subscribers.foreach(_.AIMove())
+    subscribers.foreach(_.AIMove(turn))
   }
 
   @tailrec

@@ -1,20 +1,19 @@
 package view.gui
 
 import com.kitfox.svg.SVGCache
-import model.Color
-import model.Piece
-import model.Pawn
-import model.White
-import model.Black
-import model.Knight
-import model.King
-import model.Bishop
-import model.Queen
-import model.Rook
 import com.kitfox.svg.SVGDiagram
 import com.kitfox.svg.app.beans.SVGIcon
-import javax.swing.Icon
-import java.awt.Dimension
+
+import model.Bishop
+import model.Black
+import model.Color
+import model.King
+import model.Knight
+import model.Pawn
+import model.Piece
+import model.Queen
+import model.Rook
+import model.White
 
 class SVG {
   private val universe = SVGCache.getSVGUniverse
@@ -51,9 +50,8 @@ class SVG {
     val icon = new SVGIcon
     icon.setSvgUniverse(universe)
     icon.setSvgURI(universe.getStreamBuiltURI(name(color, piece)))
-    icon.setScaleToFit(true)
     icon.setAntiAlias(true)
-    icon.setPreferredSize(new Dimension(32, 32))
+    icon.setScaleToFit(true)
     icon
   }
 }
