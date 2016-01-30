@@ -1,6 +1,5 @@
 package view
 
-import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -9,9 +8,9 @@ import scala.language.implicitConversions
 import controller.Action
 import controller.BoardState
 import controller.BoardSubscriber
-import controller.CaptureMove
-import controller.PromoteMove
-import controller.SimpleMove
+import controller.CaptureAction
+import controller.MoveAction
+import controller.PromoteAction
 import model.Bishop
 import model.Black
 import model.Color
@@ -41,43 +40,40 @@ class RobotView(rc: RobotControl) extends BoardSubscriber {
     def inc() = { ctr = ctr + 1; ctr }
     def get = ctr
   }
-  val captureCounters: Map[Color, CaptureCounter] = Map(Black -> { new CaptureCounter }, White -> { new CaptureCounter })
+  private val captureCounters: Map[Color, CaptureCounter] = Map(Black -> { new CaptureCounter }, White -> { new CaptureCounter })
+
+  private var boardState: BoardState = BoardState()
 
   def showMessage(message: String): Unit = ()
   def AIMove(color: Color): Unit = ()
 
   def resetBoard(board: BoardState): Unit = {
-    // TODO
+    // TODO Implement
+    // Make this a future?
+
+    boardState = board
   }
 
   def handleMoveString(move: String, color: Color): Unit = ()
 
   def handleActions(l: List[Action], board: BoardState): Future[Unit] = Future {
-    doHandleActions(l, board)
+    l.foreach(doAction(_))
   }
 
-  @tailrec
-  private def doHandleActions(l: List[Action], board: BoardState): Unit = {
-    l match {
-      case head :: tail =>
-        doAction(head)
-        doHandleActions(tail, board)
-      case Nil =>
-    }
-  }
-
-  private def doAction(a: Action) = {
-    a match {
-      case SimpleMove(from, to, piece, _) => {
+  private def doAction(action: Action) = {
+    action match {
+      case MoveAction(from, to) =>
+        val Some((piece, _)) = boardState(from)
         rc.movePiece(from, to, piece)
-      }
-      case CaptureMove(from, piece, color) => {
+
+      case CaptureAction(from) =>
+        val Some((piece, color)) = boardState(from)
         val idx = captureCounters(color).get
         rc.capturePiece(from, idx, color, piece)
         capturedPieces((piece, color)) += idx
         captureCounters(color).inc()
-      }
-      case PromoteMove(to, piece, color) => {
+
+      case PromoteAction(to, piece, color) => {
         val pcs = capturedPieces((piece, color))
         val idx = if (pcs.isEmpty) {
           println(s"No $color $piece found, this wasnt supposed to happen.")
@@ -90,6 +86,8 @@ class RobotView(rc: RobotControl) extends BoardSubscriber {
         rc.promotePiece(idx, color, to, piece)
       }
     }
+
+    boardState = boardState(action)
   }
 
   implicit def toRobPiece(mP: model.Piece): robot.piece.Piece = {

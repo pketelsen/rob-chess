@@ -21,9 +21,9 @@ import model.Rook
 import model.White
 
 sealed abstract class Action
-case class SimpleMove(from: BoardPos, to: BoardPos, piece: Piece, color: Color) extends Action
-case class CaptureMove(from: BoardPos, piece: Piece, color: Color) extends Action
-case class PromoteMove(to: BoardPos, piece: Piece, color: Color) extends Action
+case class MoveAction(from: BoardPos, to: BoardPos) extends Action
+case class CaptureAction(from: BoardPos) extends Action
+case class PromoteAction(to: BoardPos, piece: Piece, color: Color) extends Action
 
 case class BoardState(state: Map[BoardPos, (Piece, Color)]) {
   override def toString = {
@@ -54,13 +54,13 @@ case class BoardState(state: Map[BoardPos, (Piece, Color)]) {
   }
 
   def apply(action: Action): BoardState = BoardState(action match {
-    case SimpleMove(src, dest, _, _) =>
+    case MoveAction(src, dest) =>
       state + (dest -> state(src)) - src
 
-    case CaptureMove(src, _, _) =>
+    case CaptureAction(src) =>
       state - src
 
-    case PromoteMove(dest, piece, color) =>
+    case PromoteAction(dest, piece, color) =>
       state + (dest -> (piece, color))
   })
 
@@ -136,10 +136,11 @@ class Board {
 
     val (baseActions: List[Action], baseString: String) = {
       if (boardState(dest) != None) { // NORMAL CAPTURE
-        val Some((destPiece, destColor)) = boardState(dest)
+        assert(boardState(dest).isDefined)
+
         (List(
-          CaptureMove(dest, destPiece, destColor),
-          SimpleMove(src, dest, piece, color)),
+          CaptureAction(dest),
+          MoveAction(src, dest)),
           s"${pieceName}${src}x${dest}")
 
       } else if (piece == King && 1 < Math.abs(src.file - dest.file)) { // CASTLING
@@ -152,17 +153,17 @@ class Board {
             (new BoardPos(0, rank), new BoardPos(3, rank), "0-0-0")
 
         (List(
-          SimpleMove(src, dest, King, color),
-          SimpleMove(rookSrc, rookDest, Rook, color)), s)
+          MoveAction(src, dest),
+          MoveAction(rookSrc, rookDest)), s)
 
       } else if (piece == Pawn && src.file != dest.file) { // EN PASSANT
         (List(
-          CaptureMove(BoardPos(dest.file, src.rank), Pawn, color.other),
-          SimpleMove(src, dest, Pawn, color)),
+          CaptureAction(BoardPos(dest.file, src.rank)),
+          MoveAction(src, dest)),
           s"${pieceName}${src}x${dest}")
 
       } else { // NORMAL MOVE
-        (List(SimpleMove(src, dest, piece, color)),
+        (List(MoveAction(src, dest)),
           s"${pieceName}${src}-${dest}")
       }
     }
@@ -170,8 +171,8 @@ class Board {
     val (promotionActions: List[Action], promotionString: String) = promotion match {
       case Some(promotionPiece) =>
         (List(
-          CaptureMove(dest, Pawn, color),
-          PromoteMove(dest, promotionPiece, color)),
+          CaptureAction(dest),
+          PromoteAction(dest, promotionPiece, color)),
           promotionPiece.toString.toUpperCase)
 
       case None =>
