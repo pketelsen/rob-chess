@@ -14,6 +14,8 @@ case object PlayerTypeAI extends PlayerType {
   override def toString = "AI"
 }
 
+class MoveAbortedException extends RuntimeException("Move aborted")
+
 abstract trait Player {
   def color: Color
 
@@ -38,7 +40,13 @@ class HumanPlayer(val color: Color, gui: GameGUI) extends Player {
     if (!wasInvalid)
       Application.showMessage(s"${color} to move")
 
-    gui.getMove(color)
+    gui.getMove(color) match {
+      case Some(moves) =>
+        moves
+
+      case None =>
+        throw new MoveAbortedException
+    }
   }
 
   def acceptMove(): Unit = {

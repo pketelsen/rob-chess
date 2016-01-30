@@ -5,6 +5,7 @@ import java.util.concurrent.Executors
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 
@@ -87,9 +88,12 @@ class Game(white: Player, black: Player) {
         Application.queueEvent(EndGameEvent)
     }
   }(executionContext).onFailure {
+    case _: MoveAbortedException =>
+      println("Game aborted.")
+
     case e: Exception =>
       e.printStackTrace()
-  }(executionContext)
+  }
 
   def destroy(): Unit = {
     white.destroy()

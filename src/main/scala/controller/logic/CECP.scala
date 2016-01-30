@@ -1,11 +1,14 @@
 package controller.logic
 
+import java.io.IOException
+
 import scala.annotation.tailrec
 import scala.collection.mutable.Queue
 import scala.sys.process.stringSeqToProcess
 
 import controller.AIMoveEvent
 import controller.Application
+import controller.MoveAbortedException
 import controller.Player
 import model.Black
 import model.Color
@@ -28,14 +31,25 @@ abstract class CECP(val name: String) {
   protected def handleLine(line: String): Unit
 
   protected def readLine(): String = {
-    val line = proc.readLine()
+    val line = try {
+      proc.readLine()
+    } catch {
+      case _: IOException =>
+        throw new MoveAbortedException
+    }
+
     handleLine(line)
     //println(s"Input from $name: $line")
     line
   }
 
   protected def writeLine(line: String): Unit =
-    proc.writeLine(line)
+    try {
+      proc.writeLine(line)
+    } catch {
+      case _: IOException =>
+        throw new MoveAbortedException
+    }
 
   private def getNextPing(): Int = {
     val p = nextPing

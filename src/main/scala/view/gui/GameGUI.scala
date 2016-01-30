@@ -76,7 +76,7 @@ class GameGUI extends AbstractGUI with BoardSubscriber {
   private var hover: Option[BoardPos] = None
   private var selected: Option[BoardPos] = None
   private val promotion = mutable.Map[Color, Piece](White -> Queen, Black -> Queen)
-  private val moveChannel = new Channel[List[Move]]
+  private val moveChannel = new Channel[Option[List[Move]]]
 
   private var boardState: BoardState = null
 
@@ -246,9 +246,9 @@ class GameGUI extends AbstractGUI with BoardSubscriber {
             selected = Some(pos)
 
           case (Some(pos), Some(sel)) =>
-            moveChannel.write(List(
+            moveChannel.write(Some(List(
               Move(sel, pos, promotion.get(turn.get)),
-              Move(sel, pos, None)))
+              Move(sel, pos, None))))
             turn = None
 
           case _ =>
@@ -364,7 +364,7 @@ class GameGUI extends AbstractGUI with BoardSubscriber {
     frame.setVisible(true)
   }
 
-  def getMove(color: Color): List[Move] = {
+  def getMove(color: Color): Option[List[Move]] = {
     run {
       turn = Some(color)
       updatePromotion(color)
@@ -382,10 +382,7 @@ class GameGUI extends AbstractGUI with BoardSubscriber {
   }
 
   def abortMove(): Unit = {
-    /* This will kill the game will a NullPointerException
-     * (which is caught by the Game's ExecutionContext)
-     */
-    moveChannel.write(null)
+    moveChannel.write(None)
   }
 
   def handleMoveString(move: String, color: Color): Unit = run {
