@@ -69,14 +69,13 @@ class Game(white: Player, black: Player) {
     }
 
     val move = makeTurn(player)
+    opponent.opponentMove(move)
 
-    logic.getResult match {
+    val boardMove = board.move(move)
+
+    val event = logic.getResult match {
       case None =>
-        opponent.opponentMove(move)
-        moveBoardAndWait(move)
-
-        turn = turn.other
-        Application.queueEvent(NextTurnEvent)
+        NextTurnEvent
 
       case Some(result) =>
         result match {
@@ -84,9 +83,14 @@ class Game(white: Player, black: Player) {
           case ResultDraw(message) => Application.showMessage(s"Draw: $message")
         }
 
-        moveBoardAndWait(move)
-        Application.queueEvent(EndGameEvent)
+        EndGameEvent
     }
+
+    Await.result(boardMove, Duration.Inf)
+
+    turn = turn.other
+
+    Application.queueEvent(event)
   }(executionContext).onFailure {
     case _: MoveAbortedException =>
       println("Game aborted.")
