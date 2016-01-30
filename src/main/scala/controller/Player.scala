@@ -35,9 +35,7 @@ class HumanPlayer(val color: Color, gui: GameGUI) extends Player {
   def opponentMove(move: Move): Unit = ()
 
   def getMove(wasInvalid: Boolean): List[Move] = {
-    if (wasInvalid)
-      Application.showMessage(s"Invalid move! Try again, ${color}.")
-    else
+    if (!wasInvalid)
       Application.showMessage(s"${color} to move.")
 
     gui.getMove(color)

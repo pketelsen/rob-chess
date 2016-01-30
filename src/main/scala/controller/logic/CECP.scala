@@ -155,7 +155,7 @@ class CECPPlayer(val color: Color) extends CECP(color.toString()) with Player {
     if (wasInvalid)
       throw new RuntimeException("Engine rejected CECP AI player move")
 
-    Application.showMessage("AI is thinking...")
+    Application.showMessage(s"${color} to move. AI is thinking...")
     Application.queueEvent(AIMoveEvent)
 
     List(waitForMove())
