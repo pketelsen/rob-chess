@@ -1,12 +1,9 @@
 package controller
 
-import scala.collection.mutable.ArraySeq
 import scala.collection.mutable.MutableList
-import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.Duration
-
+import controller.logic.Result
 import model.Bishop
 import model.Black
 import model.BoardPos
@@ -19,6 +16,7 @@ import model.Piece
 import model.Queen
 import model.Rook
 import model.White
+import controller.logic.ResultWin
 
 sealed abstract class Action
 case class MoveAction(from: BoardPos, to: BoardPos) extends Action
@@ -127,7 +125,7 @@ class Board {
     Future.sequence(futures).map(_ => ())
   }
 
-  def move(move: Move): Future[Unit] = {
+  def move(move: Move, result: Option[Result]): Future[Unit] = {
     val Move(src, dest, promotion) = move
 
     val Some((piece, color)) = boardState(src)
@@ -179,10 +177,16 @@ class Board {
         (List(), "")
     }
 
+    val checkmateString = result match {
+      case Some(ResultWin(_, _)) => "#"
+      case _ => ""
+    }
+
     val actions = baseActions ++ promotionActions
+    val string = baseString + promotionString + checkmateString
 
     boardState = boardState(actions)
-    subscribers.foreach(_.handleMoveString(baseString + promotionString, color))
+    subscribers.foreach(_.handleMoveString(string, color))
     handleActionsAndWait(actions)
   }
 }

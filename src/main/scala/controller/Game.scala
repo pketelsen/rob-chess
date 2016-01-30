@@ -56,10 +56,6 @@ class Game(white: Player, black: Player) {
 
   def AIMove(): Unit = board.AIMove(turn)
 
-  private def moveBoardAndWait(move: Move): Unit = {
-    Await.result(board.move(move), Duration.Inf)
-  }
-
   def run(): Unit = Future {
     val (player, opponent) = turn match {
       case White =>
@@ -71,9 +67,11 @@ class Game(white: Player, black: Player) {
     val move = makeTurn(player)
     opponent.opponentMove(move)
 
-    val boardMove = board.move(move)
+    val optResult = logic.getResult
 
-    val event = logic.getResult match {
+    val boardMove = board.move(move, optResult)
+
+    val event = optResult match {
       case None =>
         NextTurnEvent
 
