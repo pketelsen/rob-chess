@@ -5,9 +5,13 @@ import scala.concurrent.Future
 import controller.Action
 import controller.BoardState
 import controller.BoardSubscriber
+import model.Black
 import model.Color
+import model.White
 
 object ConsoleView extends BoardSubscriber {
+  var counter = 1
+
   def showMessage(message: String): Unit = {
     println(message)
   }
@@ -16,6 +20,17 @@ object ConsoleView extends BoardSubscriber {
 
   def resetBoard(board: BoardState): Unit = {
     println(board)
+  }
+
+  def handleMoveString(move: String, color: Color): Unit = {
+    color match {
+      case White =>
+        println(s"${counter}. ${move}")
+
+      case Black =>
+        println(s"${counter}. ... ${move}")
+        counter = counter + 1
+    }
   }
 
   def handleActions(actions: List[Action], board: BoardState): Future[Unit] = {

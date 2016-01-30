@@ -61,6 +61,7 @@ trait BoardSubscriber {
   def AIMove(color: Color): Unit
   def resetBoard(board: BoardState): Unit
   def handleActions(actions: List[Action], board: BoardState): Future[Unit]
+  def handleMoveString(move: String, color: Color): Unit
 }
 
 class Board {
@@ -151,15 +152,14 @@ class Board {
   def move(move: Move): Future[Unit] = {
     val Move(src, dest, promotion) = move
 
-    val Some((srcPiece, srcColor)) = this(src)
+    val Some((srcPiece, color)) = this(src)
 
     val baseActions: List[Action] = {
-      val (srcPiece, srcColor) = this(src).get
       if (this(dest) != None) { // NORMAL CAPTURE
         val Some((destPiece, destColor)) = this(dest)
         List(
           CaptureMove(dest, destPiece, destColor),
-          SimpleMove(src, dest, srcPiece, srcColor))
+          SimpleMove(src, dest, srcPiece, color))
 
       } else if (srcPiece == King && 1 < Math.abs(src.file - dest.file)) { // CASTLING
         val direction = src.file - dest.file
@@ -170,24 +170,25 @@ class Board {
           else
             (new BoardPos(0, rank), new BoardPos(3, rank))
 
-        List(SimpleMove(src, dest, King, srcColor),
-          SimpleMove(rookSrc, rookDest, Rook, srcColor))
+        List(
+          SimpleMove(src, dest, King, color),
+          SimpleMove(rookSrc, rookDest, Rook, color))
 
       } else if (srcPiece == Pawn && src.file != dest.file) { // EN PASSANT
         List(
-          CaptureMove(BoardPos(dest.file, src.rank), Pawn, srcColor.other),
-          SimpleMove(src, dest, Pawn, srcColor))
+          CaptureMove(BoardPos(dest.file, src.rank), Pawn, color.other),
+          SimpleMove(src, dest, Pawn, color))
 
       } else { // NORMAL MOVE
-        List(SimpleMove(src, dest, srcPiece, srcColor))
+        List(SimpleMove(src, dest, srcPiece, color))
       }
     }
 
     val promotionActions: List[Action] = promotion match {
       case Some(piece) =>
         List(
-          CaptureMove(dest, Pawn, srcColor),
-          PromoteMove(dest, piece, srcColor))
+          CaptureMove(dest, Pawn, color),
+          PromoteMove(dest, piece, color))
 
       case None =>
         List()
@@ -196,6 +197,7 @@ class Board {
     val actions = baseActions ++ promotionActions
 
     modifyBoard(actions)
+    subscribers.foreach(_.handleMoveString(move.toString, color))
     handleActionsAndWait(actions)
   }
 }

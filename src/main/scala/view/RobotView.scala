@@ -49,6 +49,8 @@ class RobotView(rc: RobotControl) extends BoardSubscriber {
     // TODO
   }
 
+  def handleMoveString(move: String, color: Color): Unit = ()
+
   @tailrec
   final def handleActions(l: List[Action], board: BoardState): Future[Unit] = {
     l match {

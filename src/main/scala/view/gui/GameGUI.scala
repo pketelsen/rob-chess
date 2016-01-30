@@ -77,6 +77,8 @@ class GameGUI extends AbstractGUI with BoardSubscriber {
 
   private var boardState: BoardState = null
 
+  private var counter = 1
+
   initialize()
 
   private def paintBoard(g: Graphics2D): Unit = {
@@ -372,16 +374,12 @@ class GameGUI extends AbstractGUI with BoardSubscriber {
     moveChannel.read
   }
 
-  def acceptMove(): Unit = {
-    run {
-      selected = None
-    }
+  def acceptMove(): Unit = run {
+    selected = None
   }
 
-  def AIMove(color: Color): Unit = {
-    run {
-      updatePromotion(color)
-    }
+  def AIMove(color: Color): Unit = run {
+    updatePromotion(color)
   }
 
   def abortMove(): Unit = {
@@ -389,6 +387,28 @@ class GameGUI extends AbstractGUI with BoardSubscriber {
      * (which is caught by the Game's ExecutionContext)
      */
     moveChannel.write(null)
+  }
+
+  def handleMoveString(move: String, color: Color): Unit = run {
+    val oldText = gameHistoryArea.getText()
+
+    val sep =
+      if (oldText == "" || color == Black)
+        ""
+      else
+        "\n"
+
+    val newText =
+      color match {
+        case White =>
+          s"${counter}. ${move}"
+
+        case Black =>
+          counter = counter + 1
+          s"\t${move}"
+      }
+
+    gameHistoryArea.setText(oldText + sep + newText)
   }
 
   def showMessage(message: String): Unit = run {
@@ -406,6 +426,10 @@ class GameGUI extends AbstractGUI with BoardSubscriber {
   }
 
   def resetBoard(board: BoardState): Unit = {
+    run {
+      counter = 1
+    }
+
     updateBoardState(board)
   }
 
