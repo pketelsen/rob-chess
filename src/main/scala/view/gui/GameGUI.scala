@@ -27,6 +27,9 @@ import scala.concurrent.Future
 
 import com.kitfox.svg.app.beans.SVGIcon
 
+import controller.Action
+import controller.BoardState
+import controller.BoardSubscriber
 import javax.swing.JButton
 import javax.swing.JFrame
 import javax.swing.JPanel
@@ -45,10 +48,8 @@ import model.Piece
 import model.Queen
 import model.Rook
 import model.White
-import view.Action
-import view.BoardView
 
-class GameGUI extends AbstractGUI with BoardView {
+class GameGUI extends AbstractGUI with BoardSubscriber {
   private val borderWidth = 0.015
   private val fieldSize = (1 - 2 * borderWidth) / 8
   private val svgScale = 550.0
@@ -74,8 +75,7 @@ class GameGUI extends AbstractGUI with BoardView {
   private val promotion = mutable.Map[Color, Piece](White -> Queen, Black -> Queen)
   private val moveChannel = new Channel[List[Move]]
 
-  // To avoid accessing a mutable sequence from the Swing thread
-  private var boardData: Map[BoardPos, (Color, Piece)] = Map()
+  private var boardState: BoardState = BoardState(Map())
 
   initialize()
 
@@ -96,7 +96,7 @@ class GameGUI extends AbstractGUI with BoardView {
       case BoardPos(file, rank) =>
         if (selected.isDefined ||
           (turn != None &&
-            boardData.get(BoardPos(file, rank)).map(_._1) == turn)) {
+            boardState(BoardPos(file, rank)).map(_._2) == turn)) {
           g.setColor(hoverColor)
           g.fill(new Rectangle2D.Double(file, 7 - rank, 1, 1))
         }
@@ -116,8 +116,8 @@ class GameGUI extends AbstractGUI with BoardView {
   }
 
   private def paintPieces(g: Graphics2D): Unit = {
-    boardData.foreach {
-      case (pos, (color, piece)) =>
+    boardState.state.foreach {
+      case (pos, (piece, color)) =>
         paintPiece(g, pos.file, pos.rank, color, piece)
     }
   }
@@ -129,22 +129,9 @@ class GameGUI extends AbstractGUI with BoardView {
       g.draw(new Rectangle2D.Double(file, 7 - rank, 1, 1))
   }
 
-  private def updateBoardData(): Unit = {
-    val newBoardData = (0 until 8).flatMap { file =>
-      (0 until 8).map { rank =>
-        board.boardState(rank)(file) match {
-          case Some((piece, color)) =>
-            Some(BoardPos(file, rank), (color, piece))
-
-          case None =>
-            None
-        }
-
-      }
-    }.flatten.toMap
-
+  private def updateBoardState(board: BoardState): Unit = {
     run {
-      boardData = newBoardData
+      boardState = board
 
       if (gamePanel != null)
         gamePanel.repaint()
@@ -205,8 +192,6 @@ class GameGUI extends AbstractGUI with BoardView {
     button
   }
 
-  updateBoardData()
-
   def setupGUI(frame: JFrame) {
     svg = new SVG()
 
@@ -256,7 +241,7 @@ class GameGUI extends AbstractGUI with BoardView {
           case (Some(pos), Some(sel)) if (sel == pos) =>
             selected = None
 
-          case (Some(pos), _) if (boardData.get(pos).map(_._1) == turn) =>
+          case (Some(pos), _) if (boardState(pos).map(_._2) == turn) =>
             selected = Some(pos)
 
           case (Some(pos), Some(sel)) =>
@@ -417,8 +402,12 @@ class GameGUI extends AbstractGUI with BoardView {
     statusArea.setText(newText)
   }
 
-  def handleActions(l: List[Action]): Future[Unit] = {
-    updateBoardData()
+  def resetBoard(board: BoardState): Unit = {
+    updateBoardState(board)
+  }
+
+  def handleActions(l: List[Action], board: BoardState): Future[Unit] = {
+    updateBoardState(board)
     Future.successful(())
   }
 }

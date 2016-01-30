@@ -51,9 +51,9 @@ object Application {
 
         val game = new Game(white, black)
 
-        game.subscribe(ConsoleView)
-        game.subscribe(gameGUI)
-        robot.foreach(game.subscribe(_))
+        game.board.subscribe(ConsoleView)
+        game.board.subscribe(gameGUI)
+        robot.foreach(game.board.subscribe(_))
 
         game.run()
 
@@ -74,7 +74,7 @@ object Application {
         Some(state)
 
       case (StateRunning(_, _, game), MessageEvent(message)) =>
-        game.showMessage(message)
+        game.board.showMessage(message)
         Some(state)
 
       case (StateRunning(_, _, game), QuitEvent) =>

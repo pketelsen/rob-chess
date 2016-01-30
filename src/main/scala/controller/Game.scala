@@ -1,50 +1,29 @@
 package controller
 
 import java.util.concurrent.Executors
+
 import scala.annotation.tailrec
-import scala.collection.mutable.MutableList
-import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
-import scala.concurrent.duration.Duration
-import logic._
+
+import logic.CECPLogic
+import logic.ChessLogic
+import logic.ResultBlackWins
+import logic.ResultDraw
+import logic.ResultWhiteWins
+import model.Black
+import model.Color
 import model.Move
 import model.White
-import model.Color
-import model.Black
-
-case class GameEvent(move: Move, result: Option[Result])
-
-trait GameSubscriber {
-  def showMessage(message: String): Unit
-  def AIMove(color: Color): Unit
-  def handle(event: GameEvent): Future[Unit]
-}
 
 class Game(white: Player, black: Player) {
-  private val subscribers = MutableList[GameSubscriber]()
-
   private var turn: Color = White
 
   private val logic: ChessLogic = new CECPLogic
 
   private val executionContext = ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor())
 
-  private def publishAndWait(move: Move, result: Option[Result]) = {
-    val futures = subscribers.map(_.handle(GameEvent(move, result)))
-
-    futures.foreach { Await.ready(_, Duration.Inf) }
-  }
-
-  def subscribe(sub: GameSubscriber) = subscribers += sub
-
-  def showMessage(message: String): Unit = {
-    subscribers.foreach(_.showMessage(message))
-  }
-
-  def AIMove(): Unit = {
-    subscribers.foreach(_.AIMove(turn))
-  }
+  val board = new Board()
 
   @tailrec
   private def attemptMoves(moves: List[Move]): Option[Move] = {
@@ -73,6 +52,8 @@ class Game(white: Player, black: Player) {
     }
   }
 
+  def AIMove(): Unit = board.AIMove(turn)
+
   def run(): Unit = Future {
     val (player, opponent) = turn match {
       case White =>
@@ -86,7 +67,7 @@ class Game(white: Player, black: Player) {
     logic.getResult match {
       case None =>
         opponent.opponentMove(move)
-        publishAndWait(move, None)
+        board.move(move)
 
         turn = turn.other
         Application.queueEvent(NextTurnEvent)
@@ -98,7 +79,7 @@ class Game(white: Player, black: Player) {
           case ResultDraw(message) => Application.showMessage(s"Draw: $message")
         }
 
-        publishAndWait(move, Some(result))
+        board.move(move)
         Application.queueEvent(EndGameEvent)
     }
   }(executionContext)
