@@ -1,13 +1,13 @@
 package controller.logic
 
+import model.Color
 import model.Move
 
 abstract sealed class Result {
   def message: String
 }
 
-case class ResultWhiteWins(message: String) extends Result
-case class ResultBlackWins(message: String) extends Result
+case class ResultWin(color: Color, message: String) extends Result
 case class ResultDraw(message: String) extends Result
 
 trait ChessLogic {

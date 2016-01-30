@@ -7,6 +7,7 @@ import scala.sys.process.stringSeqToProcess
 import controller.AIMoveEvent
 import controller.Application
 import controller.Player
+import model.Black
 import model.Color
 import model.Move
 import model.White
@@ -103,9 +104,9 @@ class CECPLogic extends CECP("logic") with ChessLogic {
 
     line match {
       case CECP.patternResultWhiteWins(message) =>
-        result = Some(ResultWhiteWins(message))
+        result = Some(ResultWin(White, message))
       case CECP.patternResultBlackWins(message) =>
-        result = Some(ResultBlackWins(message))
+        result = Some(ResultWin(Black, message))
       case CECP.patternResultDraw(message) =>
         result = Some(ResultDraw(message))
 

@@ -10,9 +10,8 @@ import scala.concurrent.duration.Duration
 
 import logic.CECPLogic
 import logic.ChessLogic
-import logic.ResultBlackWins
 import logic.ResultDraw
-import logic.ResultWhiteWins
+import logic.ResultWin
 import model.Black
 import model.Color
 import model.Move
@@ -80,8 +79,7 @@ class Game(white: Player, black: Player) {
 
       case Some(result) =>
         result match {
-          case ResultWhiteWins(message) => Application.showMessage(s"White wins: $message")
-          case ResultBlackWins(message) => Application.showMessage(s"Black wins: $message")
+          case ResultWin(color, message) => Application.showMessage(s"$color wins: $message")
           case ResultDraw(message) => Application.showMessage(s"Draw: $message")
         }
 
