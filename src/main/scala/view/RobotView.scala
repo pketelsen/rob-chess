@@ -61,10 +61,11 @@ class RobotView(rc: RobotControl) extends BoardSubscriber {
   }
 
   private def doAction(action: Action) = {
-    action match {
+    boardState = boardState(action match {
       case MoveAction(from, to) =>
         val Some((piece, _)) = boardState(from)
         rc.movePiece(from, to, piece)
+        MoveAction(from, to)
 
       case CaptureAction(from) =>
         val Some((piece, color)) = boardState(from)
@@ -72,22 +73,21 @@ class RobotView(rc: RobotControl) extends BoardSubscriber {
         rc.capturePiece(from, idx, color, piece)
         capturedPieces((piece, color)) += idx
         captureCounters(color).inc()
+        CaptureAction(from)
 
-      case PromoteAction(to, piece, color) => {
-        val pcs = capturedPieces((piece, color))
-        val idx = if (pcs.isEmpty) {
-          println(s"No $color $piece found, this wasnt supposed to happen.")
-          throw new RuntimeException("Promotion with nonexistent piece. Not supported by robot.")
-        } else {
-          val i = pcs.head
-          pcs -= i
-          i
+      case PromoteAction(to, promotionPiece, color) => {
+        val (piece, pcs) = capturedPieces((promotionPiece, color)) match {
+          case ListBuffer() => (Pawn, capturedPieces((Pawn, color))) // Fall back to pawn if no matching piece exists
+          case pieces => (promotionPiece, pieces)
         }
-        rc.promotePiece(idx, color, to, piece)
-      }
-    }
 
-    boardState = boardState(action)
+        val idx = pcs.head
+        pcs -= idx
+
+        rc.promotePiece(idx, color, to, piece)
+        PromoteAction(to, piece, color)
+      }
+    })
   }
 
   implicit def toRobPiece(mP: model.Piece): robot.piece.Piece = {
