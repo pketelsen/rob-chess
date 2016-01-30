@@ -53,7 +53,46 @@ case class BoardState(state: Map[BoardPos, (Piece, Color)]) {
     }.mkString("\n")
   }
 
+  def apply(action: Action): BoardState = BoardState(action match {
+    case SimpleMove(src, dest, _, _) =>
+      state + (dest -> state(src)) - src
+
+    case CaptureMove(src, _, _) =>
+      state - src
+
+    case PromoteMove(dest, piece, color) =>
+      state + (dest -> (piece, color))
+  })
+
+  def apply(actions: List[Action]): BoardState = (actions foldLeft this)((board, action) => board(action))
+
   def apply(pos: BoardPos): Option[(Piece, Color)] = state.get(pos)
+}
+
+object BoardState {
+  private def figures(rank: Int, c: Color): Seq[(BoardPos, (Piece, Color))] =
+    Seq(
+      (BoardPos(0, rank) -> (Rook, c)),
+      (BoardPos(1, rank) -> (Knight, c)),
+      (BoardPos(2, rank) -> (Bishop, c)),
+      (BoardPos(3, rank) -> (Queen, c)),
+      (BoardPos(4, rank) -> (King, c)),
+      (BoardPos(5, rank) -> (Bishop, c)),
+      (BoardPos(6, rank) -> (Knight, c)),
+      (BoardPos(7, rank) -> (Rook, c)))
+
+  private def pawns(rank: Int, c: Color): Seq[(BoardPos, (Piece, Color))] =
+    (0 until 8).map { file =>
+      (BoardPos(file, rank) -> (Pawn, c))
+    }
+
+  def apply(): BoardState = {
+    BoardState((
+      figures(0, White) ++
+      pawns(1, White) ++
+      pawns(6, Black) ++
+      figures(7, Black)).toMap)
+  }
 }
 
 trait BoardSubscriber {
@@ -67,56 +106,11 @@ trait BoardSubscriber {
 class Board {
   private val subscribers = MutableList[BoardSubscriber]()
 
-  private val state: ArraySeq[ArraySeq[Option[(Piece, Color)]]] =
-    ArraySeq(
-      lastRow(White),
-      pawnRow(White),
-      emptyRow,
-      emptyRow,
-      emptyRow,
-      emptyRow,
-      pawnRow(Black),
-      lastRow(Black))
-
-  private def lastRow(c: Color): ArraySeq[Option[(Piece, Color)]] =
-    ArraySeq(
-      Some((Rook, c)),
-      Some((Knight, c)),
-      Some((Bishop, c)),
-      Some((Queen, c)),
-      Some((King, c)),
-      Some((Bishop, c)),
-      Some((Knight, c)),
-      Some((Rook, c)))
-
-  private def pawnRow(c: Color): ArraySeq[Option[(Piece, Color)]] =
-    ArraySeq.fill(8)(Some((Pawn, c)))
-
-  private def emptyRow: ArraySeq[Option[(Piece, Color)]] = ArraySeq.fill(8)(None)
-
-  private def apply(pos: BoardPos): Option[(Piece, Color)] = state(pos.rank)(pos.file)
-
-  private def update(pos: BoardPos, pc: Option[(Piece, Color)]): Unit = {
-    state(pos.rank)(pos.file) = pc
-  }
-
-  private def modifyBoard(actions: List[Action]): Unit = actions.foreach {
-    _ match {
-      case SimpleMove(src, dest, _, _) => {
-        this(dest) = this(src)
-        this(src) = None
-      }
-      case CaptureMove(src, _, _) => {
-        this(src) = None
-      }
-      case PromoteMove(dest, piece, color) =>
-        this(dest) = Some(piece, color)
-    }
-  }
+  private var boardState: BoardState = BoardState()
 
   def subscribe(sub: BoardSubscriber) = {
     subscribers += sub
-    sub.resetBoard(toBoardState)
+    sub.resetBoard(boardState)
   }
 
   def showMessage(message: String): Unit = {
@@ -127,21 +121,7 @@ class Board {
     subscribers.foreach(_.AIMove(color))
   }
 
-  private def toBoardState: BoardState = BoardState((0 until 8).flatMap { file =>
-    (0 until 8).map { rank =>
-      state(rank)(file) match {
-        case Some((piece, color)) =>
-          Some(BoardPos(file, rank), (piece, color))
-
-        case None =>
-          None
-      }
-    }
-  }.flatten.toMap)
-
   private def handleActionsAndWait(actions: List[Action]): Future[Unit] = {
-    val boardState = toBoardState
-
     val futures = subscribers.map(_.handleActions(actions, boardState))
 
     Future.sequence(futures).map(_ => ())
@@ -150,13 +130,13 @@ class Board {
   def move(move: Move): Future[Unit] = {
     val Move(src, dest, promotion) = move
 
-    val Some((piece, color)) = this(src)
+    val Some((piece, color)) = boardState(src)
 
     val pieceName = piece.toString.toUpperCase
 
     val (baseActions: List[Action], baseString: String) = {
-      if (this(dest) != None) { // NORMAL CAPTURE
-        val Some((destPiece, destColor)) = this(dest)
+      if (boardState(dest) != None) { // NORMAL CAPTURE
+        val Some((destPiece, destColor)) = boardState(dest)
         (List(
           CaptureMove(dest, destPiece, destColor),
           SimpleMove(src, dest, piece, color)),
@@ -200,7 +180,7 @@ class Board {
 
     val actions = baseActions ++ promotionActions
 
-    modifyBoard(actions)
+    boardState = boardState(actions)
     subscribers.foreach(_.handleMoveString(baseString + promotionString, color))
     handleActionsAndWait(actions)
   }
