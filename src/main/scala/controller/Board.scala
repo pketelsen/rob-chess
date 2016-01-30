@@ -84,13 +84,14 @@ object BoardState {
       (BoardPos(file, rank) -> (Pawn, c))
     }
 
-  def apply(): BoardState = {
+  private val initialState =
     BoardState((
       figures(0, White) ++
       pawns(1, White) ++
       pawns(6, Black) ++
       figures(7, Black)).toMap)
-  }
+
+  def apply(): BoardState = initialState
 }
 
 trait BoardSubscriber {
