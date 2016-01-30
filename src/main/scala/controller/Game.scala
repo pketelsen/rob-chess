@@ -3,8 +3,10 @@ package controller
 import java.util.concurrent.Executors
 
 import scala.annotation.tailrec
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+import scala.concurrent.duration.Duration
 
 import logic.CECPLogic
 import logic.ChessLogic
@@ -54,6 +56,10 @@ class Game(white: Player, black: Player) {
 
   def AIMove(): Unit = board.AIMove(turn)
 
+  private def moveBoardAndWait(move: Move): Unit = {
+    Await.ready(board.move(move), Duration.Inf)
+  }
+
   def run(): Unit = Future {
     val (player, opponent) = turn match {
       case White =>
@@ -67,7 +73,7 @@ class Game(white: Player, black: Player) {
     logic.getResult match {
       case None =>
         opponent.opponentMove(move)
-        board.move(move)
+        moveBoardAndWait(move)
 
         turn = turn.other
         Application.queueEvent(NextTurnEvent)
@@ -79,7 +85,7 @@ class Game(white: Player, black: Player) {
           case ResultDraw(message) => Application.showMessage(s"Draw: $message")
         }
 
-        board.move(move)
+        moveBoardAndWait(move)
         Application.queueEvent(EndGameEvent)
     }
   }(executionContext)
