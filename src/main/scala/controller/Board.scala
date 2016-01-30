@@ -144,9 +144,7 @@ class Board {
 
     val futures = subscribers.map(_.handleActions(actions, boardState))
 
-    Future {
-      futures.foreach { Await.ready(_, Duration.Inf) }
-    }
+    Future.sequence(futures).map(_ => ())
   }
 
   def move(move: Move): Future[Unit] = {

@@ -56,7 +56,7 @@ class Game(white: Player, black: Player) {
   def AIMove(): Unit = board.AIMove(turn)
 
   private def moveBoardAndWait(move: Move): Unit = {
-    Await.ready(board.move(move), Duration.Inf)
+    Await.result(board.move(move), Duration.Inf)
   }
 
   def run(): Unit = Future {
@@ -86,6 +86,9 @@ class Game(white: Player, black: Player) {
         moveBoardAndWait(move)
         Application.queueEvent(EndGameEvent)
     }
+  }(executionContext).onFailure {
+    case e: Exception =>
+      e.printStackTrace()
   }(executionContext)
 
   def destroy(): Unit = {
