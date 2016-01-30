@@ -75,7 +75,7 @@ class GameGUI extends AbstractGUI with BoardSubscriber {
   private val promotion = mutable.Map[Color, Piece](White -> Queen, Black -> Queen)
   private val moveChannel = new Channel[List[Move]]
 
-  private var boardState: BoardState = BoardState(Map())
+  private var boardState: BoardState = null
 
   initialize()
 
@@ -204,6 +204,9 @@ class GameGUI extends AbstractGUI with BoardSubscriber {
 
     gamePanel = new JPanel(null) {
       override def paint(graphics: Graphics): Unit = {
+        if (boardState == null)
+          return
+
         val g = graphics.asInstanceOf[Graphics2D]
 
         g.setRenderingHint(
