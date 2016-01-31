@@ -47,9 +47,7 @@ class RobotView(rc: RobotControl) extends BoardSubscriber {
   def showMessage(message: String): Unit = ()
   def AIMove(color: Color): Unit = ()
 
-  def handleMoveString(move: String, color: Color): Unit = ()
-
-  def handleActions(l: List[Action], board: BoardState): Future[Unit] = Future {
+  def handleMove(l: List[Action], color: Color, move: String, board: BoardState): Future[Unit] = Future {
     l.foreach(doAction(_))
   }
 

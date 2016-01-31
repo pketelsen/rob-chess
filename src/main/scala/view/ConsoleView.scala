@@ -20,7 +20,7 @@ object ConsoleView extends BoardSubscriber {
 
   def AIMove(color: Color) = ()
 
-  def handleMoveString(move: String, color: Color): Unit = {
+  def handleMove(actions: List[Action], color: Color, move: String, board: BoardState): Future[Unit] = {
     color match {
       case White =>
         println(s"${counter}. ${move}")
@@ -29,9 +29,7 @@ object ConsoleView extends BoardSubscriber {
         println(s"${counter}... ${move}")
         counter = counter + 1
     }
-  }
 
-  def handleActions(actions: List[Action], board: BoardState): Future[Unit] = {
     println(board)
     Future.successful(())
   }

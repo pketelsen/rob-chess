@@ -42,7 +42,6 @@ case class BoardState(state: Map[BoardPos, (Piece, Color)]) {
               case (Bishop, Black) => "♝"
               case (Queen, Black) => "♛"
               case (King, Black) => "♚"
-
             }
           }
           case None => " " // "　"
@@ -97,8 +96,7 @@ object BoardState {
 trait BoardSubscriber {
   def showMessage(message: String): Unit
   def AIMove(color: Color): Unit
-  def handleActions(actions: List[Action], board: BoardState): Future[Unit]
-  def handleMoveString(move: String, color: Color): Unit
+  def handleMove(actions: List[Action], color: Color, move: String, board: BoardState): Future[Unit]
 }
 
 class Board {
@@ -118,8 +116,8 @@ class Board {
     subscribers.foreach(_.AIMove(color))
   }
 
-  private def handleActionsAndWait(actions: List[Action]): Future[Unit] = {
-    val futures = subscribers.map(_.handleActions(actions, boardState))
+  private def handleActionsAndWait(actions: List[Action], color: Color, move: String): Future[Unit] = {
+    val futures = subscribers.map(_.handleMove(actions, color, move, boardState))
 
     Future.sequence(futures).map(_ => ())
   }
@@ -185,7 +183,6 @@ class Board {
     val string = baseString + promotionString + checkmateString
 
     boardState = boardState(actions)
-    subscribers.foreach(_.handleMoveString(string, color))
-    handleActionsAndWait(actions)
+    handleActionsAndWait(actions, color, string)
   }
 }

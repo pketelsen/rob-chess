@@ -55,12 +55,14 @@ class GameGUI extends AbstractGUI[GameGUIFrame](new GameGUIFrame) with BoardSubs
   def showMessage(message: String): Unit = run(_.showMessage(message))
   def AIMove(color: Color): Unit = run(_.setTurn(color, true))
 
-  def handleActions(actions: List[Action], board: BoardState): Future[Unit] = {
-    run(_.updateBoardState(board))
+  def handleMove(l: List[Action], color: Color, move: String, board: BoardState): Future[Unit] = {
+    run { frame =>
+      frame.addGameHistory(move, color)
+      frame.updateBoardState(board)
+    }
+
     Future.successful(())
   }
-
-  def handleMoveString(move: String, color: Color): Unit = run(_.addGameHistory(move, color))
 
   def getMove(color: Color): Option[List[Move]] = {
     run(_.setTurn(color, false))
