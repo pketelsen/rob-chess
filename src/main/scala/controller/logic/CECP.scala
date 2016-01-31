@@ -1,11 +1,9 @@
 package controller.logic
 
 import java.io.IOException
-
 import scala.annotation.tailrec
 import scala.collection.mutable.Queue
 import scala.sys.process.stringSeqToProcess
-
 import controller.AIMoveEvent
 import controller.Application
 import controller.MoveAbortedException
@@ -14,11 +12,14 @@ import model.Black
 import model.Color
 import model.Move
 import model.White
+import controller.Debug
 
 /**
  * The Chess Engine Communication Protocol used by gnuchess, crafty, ...
  */
 abstract class CECP(val name: String) {
+  val debug = new Debug(name)
+
   var nextPing: Int = 0
 
   val proc = Process(Seq("gnuchess", "--xboard"))
@@ -38,18 +39,22 @@ abstract class CECP(val name: String) {
         throw new MoveAbortedException
     }
 
+    debug.log("<<< " + line)
+
     handleLine(line)
-    //println(s"Input from $name: $line")
     line
   }
 
-  protected def writeLine(line: String): Unit =
+  protected def writeLine(line: String): Unit = {
+    debug.log(">>> " + line)
+
     try {
       proc.writeLine(line)
     } catch {
       case _: IOException =>
         throw new MoveAbortedException
     }
+  }
 
   private def getNextPing(): Int = {
     val p = nextPing
@@ -78,7 +83,10 @@ abstract class CECP(val name: String) {
     }
   }
 
-  def destroy(): Unit = proc.destroy()
+  def destroy(): Unit = {
+    proc.destroy()
+    debug.close()
+  }
 
   def attemptMove(move: Move): Boolean = {
     writeLine(move.toString)
