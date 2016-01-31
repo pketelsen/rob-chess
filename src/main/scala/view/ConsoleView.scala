@@ -13,7 +13,10 @@ object ConsoleView extends BoardSubscriber {
   var counter = 1
 
   def reset(): Future[Unit] = {
+    counter = 1
+
     println(BoardState())
+
     Future.successful(())
   }
 
