@@ -38,6 +38,7 @@ class RobotView(rc: RobotControl) extends BoardSubscriber {
   class CaptureCounter {
     private var ctr = 0
     def inc() = { ctr = ctr + 1; ctr }
+    def reset(): Unit = { ctr = 0 }
     def get = ctr
   }
   private val captureCounters: Map[Color, CaptureCounter] = Map(Black -> { new CaptureCounter }, White -> { new CaptureCounter })
@@ -54,7 +55,10 @@ class RobotView(rc: RobotControl) extends BoardSubscriber {
   def reset(): Future[Unit] = {
     // TODO Implement
 
+    capturedPieces.values.foreach(_.clear())
+    captureCounters.values.foreach(_.reset())
     boardState = BoardState()
+
     Future.successful(())
   }
 
