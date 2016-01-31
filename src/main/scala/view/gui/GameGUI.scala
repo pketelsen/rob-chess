@@ -358,11 +358,15 @@ class GameGUIFrame extends JFrame("rob-chess") with AbstractGUIWindow {
 
     pack()
 
+    val statusLabelHeight = statusLabel.getPreferredSize.height
+
+    statusLabel.setPreferredSize(new Dimension(0, statusLabelHeight))
+
     /* Board size: 680x680
      * Width: board width * 5/4
      * Height: board height + status label height
      */
-    setSize(new Dimension(850, 680 + statusLabel.getPreferredSize.height))
+    setSize(new Dimension(850, 680 + statusLabelHeight))
 
     setVisible(true)
   }
