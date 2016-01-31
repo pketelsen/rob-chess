@@ -51,6 +51,13 @@ class RobotView(rc: RobotControl) extends BoardSubscriber {
     l.foreach(doAction(_))
   }
 
+  def reset(): Future[Unit] = {
+    // TODO Implement
+
+    boardState = BoardState()
+    Future.successful(())
+  }
+
   private def doAction(action: Action) = {
     boardState = boardState(action match {
       case MoveAction(from, to) =>

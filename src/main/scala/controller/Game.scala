@@ -1,14 +1,12 @@
 package controller
 
 import java.util.concurrent.Executors
-
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
-
 import logic.CECPLogic
 import logic.ChessLogic
 import logic.ResultDraw
@@ -17,6 +15,7 @@ import model.Black
 import model.Color
 import model.Move
 import model.White
+import java.util.concurrent.TimeUnit
 
 class Game(white: Player, black: Player) {
   private var turn: Color = White
@@ -67,28 +66,23 @@ class Game(white: Player, black: Player) {
     val move = makeTurn(player)
     opponent.opponentMove(move)
 
-    val optResult = logic.getResult
+    val result = logic.getResult
 
-    val boardMove = board.move(move, optResult)
+    val boardMove = board.move(move, result)
 
-    val event = optResult match {
-      case None =>
-        NextTurnEvent
-
-      case Some(result) =>
-        result match {
-          case ResultWin(color, message) => Application.showMessage(s"$color wins: $message")
-          case ResultDraw(message) => Application.showMessage(s"Draw: $message")
-        }
-
-        EndGameEvent
+    result.foreach {
+      _ match {
+        case ResultWin(color, message) => Application.showMessage(s"$color wins: $message")
+        case ResultDraw(message) => Application.showMessage(s"Draw: $message")
+      }
     }
 
     Await.result(boardMove, Duration.Inf)
 
-    turn = turn.other
-
-    Application.queueEvent(event)
+    if (result.isEmpty) {
+      turn = turn.other
+      Application.queueEvent(NextTurnEvent)
+    }
   }(executionContext).onFailure {
     case _: MoveAbortedException =>
       println("Game aborted.")
@@ -102,5 +96,9 @@ class Game(white: Player, black: Player) {
     black.destroy()
     logic.destroy()
     executionContext.shutdown()
+
+    while (!executionContext.awaitTermination(1, TimeUnit.DAYS)) {}
+
+    // TODO Reset board
   }
 }

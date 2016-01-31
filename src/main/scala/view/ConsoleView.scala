@@ -12,7 +12,10 @@ import model.White
 object ConsoleView extends BoardSubscriber {
   var counter = 1
 
-  println(BoardState())
+  def reset(): Future[Unit] = {
+    println(BoardState())
+    Future.successful(())
+  }
 
   def showMessage(message: String): Unit = {
     println(message)

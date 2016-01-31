@@ -2,13 +2,18 @@ package view.gui
 
 import java.awt.Toolkit
 
+import javax.swing.SwingUtilities
 import javax.swing.UIManager
 
-object GUI {
+object GUI extends Runnable {
   def init(): Unit = {
     System.setProperty("awt.useSystemAAFontSettings", "on")
     System.setProperty("swing.aatext", "true")
 
+    SwingUtilities.invokeAndWait(this)
+  }
+
+  def run(): Unit = {
     try {
       UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
     } catch {

@@ -28,8 +28,10 @@ import scala.concurrent.Future
 import com.kitfox.svg.app.beans.SVGIcon
 
 import controller.Action
+import controller.Application
 import controller.BoardState
 import controller.BoardSubscriber
+import controller.NewGameEvent
 import javax.swing.JButton
 import javax.swing.JFrame
 import javax.swing.JLabel
@@ -54,7 +56,10 @@ import model.White
 class GameGUI extends AbstractGUI[GameGUIFrame](new GameGUIFrame) with BoardSubscriber {
   private def getMoveChannel = run(_.getMoveChannel)
 
-  def reset(): Unit = run(_.reset())
+  def reset(): Future[Unit] = {
+    run(_.reset())
+    Future.successful(())
+  }
 
   def showMessage(message: String): Unit = run(_.showMessage(message))
   def AIMove(color: Color): Unit = run(_.setTurn(color, true))
@@ -262,6 +267,11 @@ class GameGUIFrame extends JFrame("rob-chess") with AbstractGUIWindow {
 
   {
     val newGameButton = new JButton("New game")
+    newGameButton.addActionListener(new ActionListener {
+      def actionPerformed(e: ActionEvent): Unit = {
+        Application.queueEvent(NewGameEvent)
+      }
+    })
 
     gameHistoryArea.setEditable(false)
 
@@ -278,11 +288,6 @@ class GameGUIFrame extends JFrame("rob-chess") with AbstractGUIWindow {
     statusLabel.setFont(statusLabel.getFont().deriveFont(Font.BOLD, 20))
     statusLabel.setBorder(new EmptyBorder(5, 10, 5, 10))
 
-    /* Board size: 680x680
-     * Width: board width * 5/4
-     * Height: board height + status label height
-     */
-    setPreferredSize(new Dimension(850, 680 + statusLabel.getPreferredSize.height))
     setLayout(new GridBagLayout)
 
     gamePanel.setPreferredSize(new Dimension(0, 0))
@@ -352,6 +357,13 @@ class GameGUIFrame extends JFrame("rob-chess") with AbstractGUIWindow {
     })
 
     pack()
+
+    /* Board size: 680x680
+     * Width: board width * 5/4
+     * Height: board height + status label height
+     */
+    setSize(new Dimension(850, 680 + statusLabel.getPreferredSize.height))
+
     setVisible(true)
   }
 

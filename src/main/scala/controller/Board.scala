@@ -96,6 +96,7 @@ object BoardState {
 trait BoardSubscriber {
   def showMessage(message: String): Unit
   def AIMove(color: Color): Unit
+  def reset(): Future[Unit]
   def handleMove(actions: List[Action], color: Color, move: String, board: BoardState): Future[Unit]
 }
 
@@ -116,8 +117,14 @@ class Board {
     subscribers.foreach(_.AIMove(color))
   }
 
-  private def handleActionsAndWait(actions: List[Action], color: Color, move: String): Future[Unit] = {
+  private def handleMove(actions: List[Action], color: Color, move: String): Future[Unit] = {
     val futures = subscribers.map(_.handleMove(actions, color, move, boardState))
+
+    Future.sequence(futures).map(_ => ())
+  }
+
+  def reset(): Future[Unit] = {
+    val futures = subscribers.map(_.reset())
 
     Future.sequence(futures).map(_ => ())
   }
@@ -183,6 +190,6 @@ class Board {
     val string = baseString + promotionString + checkmateString
 
     boardState = boardState(actions)
-    handleActionsAndWait(actions, color, string)
+    handleMove(actions, color, string)
   }
 }

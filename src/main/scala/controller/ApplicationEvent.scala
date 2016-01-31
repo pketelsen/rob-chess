@@ -11,15 +11,16 @@ case object InitEvent extends ApplicationEvent
 
 case class RobotSetupEvent(robot: Option[RobotView]) extends ApplicationEvent
 
+case object NewGameEvent extends ApplicationEvent
+
+case object ClearedEvent extends ApplicationEvent
+
 case class StartGameEvent(
   whiteInfo: PlayerInfo,
   blackInfo: PlayerInfo)
     extends ApplicationEvent
 
 case object NextTurnEvent extends ApplicationEvent
-
-case object EndGameEvent
-  extends ApplicationEvent
 
 case object AIMoveEvent
   extends ApplicationEvent

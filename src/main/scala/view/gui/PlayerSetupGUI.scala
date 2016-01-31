@@ -18,9 +18,9 @@ import javax.swing.JDialog
 import javax.swing.JFrame
 import javax.swing.JLabel
 
-class PlayerSetupGUI(owner: JFrame) extends AbstractGUI[PlayerSetupGUIDialog](new PlayerSetupGUIDialog(owner))
+class PlayerSetupGUI(owner: JFrame, gameConfig: (PlayerInfo, PlayerInfo)) extends AbstractGUI[PlayerSetupGUIDialog](new PlayerSetupGUIDialog(owner, gameConfig))
 
-class PlayerSetupGUIDialog(owner: JFrame) extends JDialog(owner, "Player setup") with AbstractGUIWindow {
+class PlayerSetupGUIDialog(owner: JFrame, gameConfig: (PlayerInfo, PlayerInfo)) extends JDialog(owner, "Player setup") with AbstractGUIWindow {
   {
     val l = new GroupLayout(getContentPane())
     getContentPane().setLayout(l)
@@ -34,7 +34,9 @@ class PlayerSetupGUIDialog(owner: JFrame) extends JDialog(owner, "Player setup")
     val labelBlack = new JLabel("Black")
     val choiceWhite = new JComboBox[PlayerType](choices)
     val choiceBlack = new JComboBox[PlayerType](choices)
-    choiceBlack.setSelectedIndex(1)
+
+    choiceWhite.setSelectedItem(gameConfig._1.playerType)
+    choiceBlack.setSelectedItem(gameConfig._2.playerType)
 
     val startButton = new JButton("Start game")
     startButton.addActionListener(new ActionListener {
