@@ -1,15 +1,14 @@
 package view.gui
 
+import java.awt.Window
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 
 import controller.Application
 import controller.QuitEvent
-import javax.swing.JFrame
 import javax.swing.SwingUtilities
-import javax.swing.WindowConstants
 
-abstract class AbstractGUI[T <: JFrame](initializeFrame: => T) {
+abstract class AbstractGUI[T <: Window](initializeWindow: => T) {
   private def invoke[R](f: => R): R = {
     var ret: Option[R] = None
 
@@ -23,16 +22,16 @@ abstract class AbstractGUI[T <: JFrame](initializeFrame: => T) {
     ret.get
   }
 
-  private val frame: T = invoke(initializeFrame)
+  val window: T = invoke(initializeWindow)
 
   def run[R](f: T => R): R = invoke {
-    f(frame)
+    f(window)
   }
+
+  def dispose(): Unit = run(_.dispose())
 }
 
-abstract class AbstractGUIFrame(subtitle: String = "") extends JFrame("rob-chess" + subtitle) {
-  setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE)
-
+abstract trait AbstractGUIWindow extends Window {
   addWindowListener(new WindowAdapter {
     override def windowClosing(e: WindowEvent): Unit = {
       Application.queueEvent(QuitEvent)

@@ -1,6 +1,5 @@
 package controller
 
-import controller.logic.Result
 import view.RobotView
 
 case class Host(hostname: String, port: Int)

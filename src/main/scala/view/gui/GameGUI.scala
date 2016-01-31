@@ -31,12 +31,14 @@ import controller.Action
 import controller.BoardState
 import controller.BoardSubscriber
 import javax.swing.JButton
+import javax.swing.JFrame
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JScrollPane
 import javax.swing.JTextArea
 import javax.swing.JToggleButton
 import javax.swing.ScrollPaneConstants
+import javax.swing.WindowConstants
 import javax.swing.border.EmptyBorder
 import model.Bishop
 import model.Black
@@ -50,7 +52,9 @@ import model.Rook
 import model.White
 
 class GameGUI extends AbstractGUI[GameGUIFrame](new GameGUIFrame) with BoardSubscriber {
-  val moveChannel = run(_.moveChannel)
+  private def getMoveChannel = run(_.getMoveChannel)
+
+  def reset(): Unit = run(_.reset())
 
   def showMessage(message: String): Unit = run(_.showMessage(message))
   def AIMove(color: Color): Unit = run(_.setTurn(color, true))
@@ -66,26 +70,43 @@ class GameGUI extends AbstractGUI[GameGUIFrame](new GameGUIFrame) with BoardSubs
 
   def getMove(color: Color): Option[List[Move]] = {
     run(_.setTurn(color, false))
-    moveChannel.read
+    getMoveChannel.read
   }
 
   def acceptMove(): Unit = run(_.acceptMove())
 
   def abortMove(): Unit = {
-    moveChannel.write(None)
+    getMoveChannel.write(None)
   }
 }
 
-class GameGUIFrame extends AbstractGUIFrame {
+class GameGUIFrame extends JFrame("rob-chess") with AbstractGUIWindow {
   private var turn: Option[Color] = None
   private var hover: Option[BoardPos] = None
   private var selected: Option[BoardPos] = None
   private val promotion = mutable.Map[Color, Piece](White -> Queen, Black -> Queen)
-  val moveChannel = new Channel[Option[List[Move]]]
+  private var moveChannel = new Channel[Option[List[Move]]]
 
   private var boardState: BoardState = BoardState()
 
   private var counter = 1
+
+  def reset(): Unit = {
+    turn = None
+    selected = None
+
+    promotion(White) = Queen
+    promotion(Black) = Queen
+
+    moveChannel = new Channel[Option[List[Move]]]
+
+    counter = 1
+
+    statusLabel.setText(" ")
+    gameHistoryArea.setText("")
+
+    updateBoardState(BoardState())
+  }
 
   class GamePanel extends JPanel(null) {
     private val borderWidth = 0.015
@@ -236,6 +257,8 @@ class GameGUIFrame extends AbstractGUIFrame {
   private val statusLabel = new JLabel(" ") // Non-empty content to get correct height
 
   private val (promotionIcons, promotionButtons) = createPromotionButtons()
+
+  setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE)
 
   {
     val newGameButton = new JButton("New game")
@@ -410,6 +433,9 @@ class GameGUIFrame extends AbstractGUIFrame {
           s"\t${move}"
       })
   }
+
+  def getMoveChannel: Channel[Option[List[Move]]] =
+    moveChannel
 
   def showMessage(message: String): Unit = {
     statusLabel.setText(message)

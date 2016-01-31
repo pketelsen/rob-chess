@@ -1,9 +1,9 @@
 package view.gui
 
+import java.awt.Dialog.ModalityType
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
-import java.awt.event.WindowAdapter
-import java.awt.event.WindowEvent
+
 import controller.Application
 import controller.PlayerInfo
 import controller.PlayerType
@@ -14,13 +14,13 @@ import javax.swing.GroupLayout
 import javax.swing.GroupLayout.Alignment
 import javax.swing.JButton
 import javax.swing.JComboBox
+import javax.swing.JDialog
 import javax.swing.JFrame
 import javax.swing.JLabel
-import controller.QuitEvent
 
-class PlayerSetupGUI extends AbstractGUI[PlayerSetupGUIFrame](new PlayerSetupGUIFrame)
+class PlayerSetupGUI(owner: JFrame) extends AbstractGUI[PlayerSetupGUIDialog](new PlayerSetupGUIDialog(owner))
 
-class PlayerSetupGUIFrame extends AbstractGUIFrame(" • player setup") {
+class PlayerSetupGUIDialog(owner: JFrame) extends JDialog(owner, "Player setup") with AbstractGUIWindow {
   {
     val l = new GroupLayout(getContentPane())
     getContentPane().setLayout(l)
@@ -65,6 +65,8 @@ class PlayerSetupGUIFrame extends AbstractGUIFrame(" • player setup") {
     l.setVerticalGroup(vGroup)
 
     pack()
+    setModalityType(ModalityType.APPLICATION_MODAL)
+    setLocationRelativeTo(owner)
     setVisible(true)
   }
 }

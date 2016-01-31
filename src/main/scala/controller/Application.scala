@@ -17,10 +17,10 @@ import view.gui.RobotSetupGUI
 object Application {
   private trait State
 
-  private case object StateStart extends State
-  private case class StateRobotSetup(gui: RobotSetupGUI) extends State
-  private case class StatePlayerSetup(gui: PlayerSetupGUI, robot: Option[RobotView]) extends State
-  private case class StateRunning(gui: GameGUI, robot: Option[RobotView], game: Game) extends State
+  private case class StateStart(gameGUI: GameGUI) extends State
+  private case class StateRobotSetup(gameGUI: GameGUI, gui: RobotSetupGUI) extends State
+  private case class StatePlayerSetup(gameGUI: GameGUI, gui: PlayerSetupGUI, robot: Option[RobotView]) extends State
+  private case class StateRunning(gameGUI: GameGUI, robot: Option[RobotView], game: Game) extends State
 
   private val eventBus = new Channel[ApplicationEvent]
 
@@ -36,17 +36,17 @@ object Application {
 
   private def handleEvent(state: State, event: ApplicationEvent): Option[State] = {
     (state, event) match {
-      case (StateStart, InitEvent) =>
+      case (StateStart(gameGUI), InitEvent) =>
         val robotSetupGUI = new RobotSetupGUI
-        Some(StateRobotSetup(robotSetupGUI))
+        Some(StateRobotSetup(gameGUI, robotSetupGUI))
 
-      case (StateRobotSetup(robotSetupGUI), RobotSetupEvent(robot)) =>
-        val playerSetupGUI = new PlayerSetupGUI
-        Some(StatePlayerSetup(playerSetupGUI, robot))
+      case (StateRobotSetup(gameGUI, robotSetupGUI), RobotSetupEvent(robot)) =>
+        gameGUI.reset()
 
-      case (StatePlayerSetup(playerSetupGUI, robot), StartGameEvent(whiteInfo, blackInfo)) =>
-        val gameGUI = new GameGUI
+        val playerSetupGUI = new PlayerSetupGUI(gameGUI.window)
+        Some(StatePlayerSetup(gameGUI, playerSetupGUI, robot))
 
+      case (StatePlayerSetup(gameGUI, playerSetupGUI, robot), StartGameEvent(whiteInfo, blackInfo)) =>
         val white = mkPlayer(whiteInfo, White, gameGUI)
         val black = mkPlayer(blackInfo, Black, gameGUI)
 
@@ -103,9 +103,13 @@ object Application {
   }
 
   def main(args: Array[String]) = {
-    GUI.init()
-
     queueEvent(InitEvent)
-    handleEvents(StateStart)
+
+    GUI.init()
+    val gameGUI = new GameGUI
+
+    handleEvents(StateStart(gameGUI))
+
+    gameGUI.dispose()
   }
 }
