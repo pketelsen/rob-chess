@@ -50,7 +50,7 @@ case class BoardState(state: Map[BoardPos, (Piece, Color)]) {
     }.mkString("\n")
   }
 
-  def apply(action: Action): BoardState = BoardState(action match {
+  def +(action: Action): BoardState = BoardState(action match {
     case MoveAction(src, dest) =>
       state + (dest -> state(src)) - src
 
@@ -61,7 +61,7 @@ case class BoardState(state: Map[BoardPos, (Piece, Color)]) {
       state + (dest -> (piece, color))
   })
 
-  def apply(actions: List[Action]): BoardState = (actions foldLeft this)((board, action) => board(action))
+  def ++(actions: List[Action]): BoardState = (actions foldLeft this)(_ + _)
 
   def apply(pos: BoardPos): Option[(Piece, Color)] = state.get(pos)
 }
@@ -189,7 +189,7 @@ class Board {
     val actions = baseActions ++ promotionActions
     val string = baseString + promotionString + checkmateString
 
-    boardState = boardState(actions)
+    boardState = boardState ++ actions
     handleMove(actions, color, string)
   }
 }

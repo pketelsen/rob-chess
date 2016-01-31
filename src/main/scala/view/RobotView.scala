@@ -63,7 +63,7 @@ class RobotView(rc: RobotControl) extends BoardSubscriber {
   }
 
   private def doAction(action: Action) = {
-    boardState = boardState(action match {
+    boardState = boardState + (action match {
       case MoveAction(from, to) =>
         val Some((piece, _)) = boardState(from)
         rc.movePiece(from, to, piece)
