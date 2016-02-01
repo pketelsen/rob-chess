@@ -150,7 +150,7 @@ class CECPPlayer(val color: Color) extends CECP(color.toString()) with Player {
 
   def opponentMove(move: Move): Unit = sendMove(move)
 
-  def acceptMove(): Unit = ()
+  def acceptMove(result: Option[Result]): Unit = ()
 
   protected def handleLine(line: String): Unit = {
     line match {

@@ -32,6 +32,7 @@ import controller.Application
 import controller.BoardState
 import controller.BoardSubscriber
 import controller.NewGameEvent
+import controller.logic.Result
 import javax.swing.JButton
 import javax.swing.JFrame
 import javax.swing.JLabel
@@ -78,7 +79,7 @@ class GameGUI extends AbstractGUI[GameGUIFrame](new GameGUIFrame) with BoardSubs
     getMoveChannel.read
   }
 
-  def acceptMove(): Unit = run(_.acceptMove())
+  def acceptMove(result: Option[Result]): Unit = run(_.acceptMove(result))
 
   def abortMove(): Unit = {
     getMoveChannel.write(None)
@@ -381,7 +382,7 @@ class GameGUIFrame extends JFrame("rob-chess") with AbstractGUIWindow {
       def actionPerformed(e: ActionEvent): Unit = {
         turn.foreach { color =>
           promotion(color) = piece
-          updatePromotion(color)
+          updatePromotion(None)
         }
       }
     })
@@ -409,17 +410,21 @@ class GameGUIFrame extends JFrame("rob-chess") with AbstractGUIWindow {
     gamePanel.repaint()
   }
 
-  private def updatePromotion(color: Color): Unit = {
+  private def updatePromotion(color: Option[Color]): Unit = {
     promotionButtons.foreach {
       case (piece, button) =>
-        button.setIcon(promotionIcons((color, piece)))
+        color.foreach { c =>
+          button.setIcon(promotionIcons((c, piece)))
+        }
 
-        if (turn == None) {
-          button.setEnabled(false)
-          button.setSelected(false)
-        } else {
-          button.setEnabled(true)
-          button.setSelected(piece == promotion(color))
+        turn match {
+          case Some(c) =>
+            button.setEnabled(true)
+            button.setSelected(piece == promotion(c))
+
+          case None =>
+            button.setEnabled(false)
+            button.setSelected(false)
         }
     }
   }
@@ -428,11 +433,14 @@ class GameGUIFrame extends JFrame("rob-chess") with AbstractGUIWindow {
     if (!ai)
       turn = Some(color)
 
-    updatePromotion(color)
+    updatePromotion(Some(color))
   }
 
-  def acceptMove(): Unit = {
+  def acceptMove(result: Option[Result]): Unit = {
     selected = None
+
+    if (result.isDefined)
+      updatePromotion(None)
   }
 
   def addGameHistory(move: String, color: Color): Unit = {

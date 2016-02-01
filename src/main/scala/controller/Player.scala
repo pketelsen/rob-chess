@@ -3,6 +3,7 @@ package controller
 import model.Color
 import model.Move
 import view.gui.GameGUI
+import controller.logic.Result
 
 abstract sealed class PlayerType
 
@@ -28,7 +29,7 @@ abstract trait Player {
    */
   def getMove(wasInvalid: Boolean): List[Move]
 
-  def acceptMove(): Unit
+  def acceptMove(result: Option[Result]): Unit
 
   def destroy(): Unit
 }
@@ -49,8 +50,8 @@ class HumanPlayer(val color: Color, gui: GameGUI) extends Player {
     }
   }
 
-  def acceptMove(): Unit = {
-    gui.acceptMove()
+  def acceptMove(result: Option[Result]): Unit = {
+    gui.acceptMove(result)
   }
 
   def destroy(): Unit = {

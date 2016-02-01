@@ -46,7 +46,6 @@ class Game(white: Player, black: Player) {
 
     attemptMoves(moves) match {
       case Some(move) =>
-        player.acceptMove()
         move
       case None =>
         makeTurn(player, true)
@@ -67,6 +66,8 @@ class Game(white: Player, black: Player) {
     opponent.opponentMove(move)
 
     val result = logic.getResult
+
+    player.acceptMove(result)
 
     val boardMove = board.move(move, result)
 
