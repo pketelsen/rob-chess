@@ -72,15 +72,19 @@ abstract class CECP(val name: String) {
 
   protected def sync(cb: String => Unit): Unit = {
     val p = getNextPing()
-    writeLine(s"ping $p")
 
-    await { line =>
+    def waitForPong(line: String): Option[Unit] = {
       if (line != s"pong $p") {
         cb(line)
         None
       } else
         Some(())
     }
+
+    writeLine(s"ping $p")
+
+    await(waitForPong)
+    await(waitForPong)
   }
 
   def destroy(): Unit = {
@@ -88,20 +92,7 @@ abstract class CECP(val name: String) {
     debug.close()
   }
 
-  def attemptMove(move: Move): Boolean = {
-    writeLine(move.toString)
-
-    var valid = true
-
-    sync { line =>
-      if (CECP.patternInvalidMove.findFirstIn(line).isDefined)
-        valid = false
-    }
-
-    sync { _ => }
-
-    valid
-  }
+  protected def sendMove(move: Move): Unit = writeLine(move.toString)
 }
 
 object CECP {
@@ -135,6 +126,20 @@ class CECPLogic extends CECP("logic") with ChessLogic {
       case _ =>
     }
   }
+
+  def attemptMove(move: Move): Boolean = {
+    writeLine(move.toString)
+
+    var valid = true
+
+    sync { line =>
+      if (CECP.patternInvalidMove.findFirstIn(line).isDefined)
+        valid = false
+    }
+
+    valid
+  }
+
 }
 
 class CECPPlayer(val color: Color) extends CECP(color.toString()) with Player {
@@ -143,10 +148,7 @@ class CECPPlayer(val color: Color) extends CECP(color.toString()) with Player {
   if (color == White)
     writeLine("go")
 
-  def opponentMove(move: Move): Unit = {
-    if (!attemptMove(move))
-      throw new RuntimeException("CECP AI player rejected valid move")
-  }
+  def opponentMove(move: Move): Unit = sendMove(move)
 
   def acceptMove(): Unit = ()
 
