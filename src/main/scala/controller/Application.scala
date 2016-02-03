@@ -46,7 +46,7 @@ object Application {
   private def handleEvent(state: State, event: ApplicationEvent): Option[State] = {
     (state, event) match {
       case (StateStart(gameGUI), InitEvent) =>
-        val robotSetupGUI = new RobotSetupGUI
+        val robotSetupGUI = new RobotSetupGUI(gameGUI.window)
         Some(StateRobotSetup(gameGUI, robotSetupGUI))
 
       case (StateRobotSetup(gameGUI, robotSetupGUI), RobotSetupEvent(robot)) =>
