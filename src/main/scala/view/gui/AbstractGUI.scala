@@ -4,6 +4,9 @@ import java.awt.Window
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
 import controller.Application
 import controller.QuitEvent
 import javax.swing.SwingUtilities
@@ -23,6 +26,10 @@ abstract class AbstractGUI[T <: Window](initializeWindow: => T) {
   }
 
   val window: T = invoke(initializeWindow)
+  
+  Future {
+    run(_.setVisible(true))
+  }
 
   def run[R](f: T => R): R = invoke {
     f(window)

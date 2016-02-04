@@ -4,7 +4,6 @@ import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.Channel
 import scala.concurrent.duration.Duration
-
 import controller.logic.CECPPlayer
 import model.Black
 import model.Color
@@ -15,6 +14,8 @@ import view.gui.GUI
 import view.gui.GameGUI
 import view.gui.PlayerSetupGUI
 import view.gui.RobotSetupGUI
+import robot.Tracking
+import robot.Robot
 
 object Application {
   private trait State
@@ -31,7 +32,7 @@ object Application {
   private def mkPlayer(info: PlayerInfo, color: Color, gui: GameGUI): Player =
     info.playerType match {
       case PlayerTypeHuman => new HumanPlayer(color, gui)
-      case PlayerTypeAI => new CECPPlayer(color)
+      case PlayerTypeAI    => new CECPPlayer(color)
     }
 
   def queueEvent(event: ApplicationEvent) = eventBus.write(event)
@@ -48,6 +49,32 @@ object Application {
       case (StateStart(gameGUI), InitEvent) =>
         val robotSetupGUI = new RobotSetupGUI(gameGUI.window)
         Some(StateRobotSetup(gameGUI, robotSetupGUI))
+
+      case (StateRobotSetup(gameGUI, robotSetupGUI), RobotConnectEvent(host)) =>
+        println(s"Connecting to robot $host")
+        robotSetupGUI.connectRobot(host)
+        Some(state)
+
+      case (StateRobotSetup(gameGUI, robotSetupGUI), TrackingConnectEvent(host)) =>
+        println(s"Connecting to tracking $host")
+        robotSetupGUI.connectTracking(host)
+        Some(state)
+
+      case (StateRobotSetup(gameGUI, robotSetupGUI), RobotConnectedEvent(robot)) =>
+        robotSetupGUI.robotConnected(robot)
+        Some(state)
+
+      case (StateRobotSetup(gameGUI, robotSetupGUI), TrackingConnectedEvent(tracking)) =>
+        robotSetupGUI.trackingConnected(tracking)
+        Some(state)
+      
+      case (StateRobotSetup(gameGUI, robotSetupGUI), CalibrateRobotEvent) =>
+        robotSetupGUI.calibrateRobot()
+        Some(state)
+
+      case (StateRobotSetup(gameGUI, robotSetupGUI), MeasureBoardEvent) =>
+        robotSetupGUI.measureBoard()
+        Some(state)
 
       case (StateRobotSetup(gameGUI, robotSetupGUI), RobotSetupEvent(robot)) =>
         Some(newGame(gameGUI, robot, (

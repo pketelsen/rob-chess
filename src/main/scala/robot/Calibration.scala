@@ -29,8 +29,10 @@ case class Measurement(m: Mat, n: Mat) {
   }
 }
 
+case class Calibration(t_Rob_Track: Mat, t_Eff_Mark: Mat)
+
 object Calibration {
-  def calibrate(measurements: Seq[Measurement]): (Mat, Mat) = {
+  def calibrate(measurements: Seq[Measurement]): Calibration = {
     val A = DenseMatrix.vertcat(measurements map (_.A): _*)
     val b = DenseVector.vertcat(measurements map (_.b): _*)
 
@@ -55,7 +57,7 @@ object Calibration {
       DenseMatrix.horzcat(uY * vY, transY),
       bottom)
 
-    (X, Y)
+    Calibration(X, Y)
   }
 }
 
@@ -96,13 +98,4 @@ object Testdata {
     (0.01635512, -0.03203462, -0.99841412, 26.80600561),
     (-0.99930823, -0.003427950, -0.01818396, -16.99422957),
     (0.0, 0.0, 0.0, 1.0));
-}
-
-object CalibrationTest {
-  def test(): Unit = {
-    val (x, y) = Calibration.calibrate(Testdata.measurements)
-    println(x)
-    println
-    println(y)
-  }
 }

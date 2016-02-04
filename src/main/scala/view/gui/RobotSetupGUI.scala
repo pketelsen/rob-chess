@@ -4,117 +4,298 @@ import java.awt.Dialog.ModalityType
 import java.awt.FlowLayout
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
-
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import controller.Application
-import controller.PlayerInfo
-import controller.PlayerType
-import controller.PlayerTypeAI
-import controller.PlayerTypeHuman
+import controller.CalibrateRobotEvent
+import controller.Host
+import controller.RobotConnectEvent
+import controller.RobotConnectedEvent
 import controller.RobotSetupEvent
-import controller.StartGameEvent
+import controller.TrackingConnectEvent
+import controller.TrackingConnectedEvent
 import javax.swing.BorderFactory
 import javax.swing.BoxLayout
 import javax.swing.JButton
-import javax.swing.JComboBox
 import javax.swing.JDialog
 import javax.swing.JFrame
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JTextField
 import javax.swing.border.EtchedBorder
+import robot.Robot
+import robot.RobotController
+import robot.Tracking
+import controller.MeasureBoardEvent
+import view.RobotView
 
+class RobotSetupGUI(owner: JFrame) extends AbstractGUI[RobotSetupGUIDialog](new RobotSetupGUIDialog(owner)) {
+  def connectRobot(host: Host): Unit = Future {
+    val robot = try {
+      Some(new Robot(host))
+    } catch {
+      case _: Exception =>
+        None
+    }
 
-class RobotSetupGUI(owner: JFrame) extends AbstractGUI[RobotSetupGUIDialog](new RobotSetupGUIDialog(owner))
+    Application.queueEvent(RobotConnectedEvent(robot))
+  }
+
+  def connectTracking(host: Host): Unit = Future {
+    val markerEffector = "Gripper_21012016"
+    val markerChessboard = "Chessboard"
+
+    val tracking = try {
+      Some((Tracking(host, markerEffector), Tracking(host, markerChessboard)))
+    } catch {
+      case _: Exception =>
+        None
+    }
+
+    Application.queueEvent(TrackingConnectedEvent(tracking))
+  }
+
+  def robotConnected(robot: Option[Robot]) {
+    run { window =>
+      window.robot = robot
+
+      if (robot.isEmpty) {
+        window.inputRobotIp.setEnabled(true)
+        window.inputRobotPort.setEnabled(true)
+        window.robotConnectButton.setEnabled(true)
+      } else {
+        window.robotConnectButton.setText("Connected")
+      }
+
+      window.updateConnected()
+    }
+  }
+
+  def trackingConnected(tracking: Option[(Tracking, Tracking)]) {
+    run { window =>
+      window.tracking = tracking
+
+      if (tracking.isEmpty) {
+        window.inputTrackingIp.setEnabled(true)
+        window.inputTrackingPort.setEnabled(true)
+        window.trackingConnectButton.setEnabled(true)
+      } else {
+        window.trackingConnectButton.setText("Connected")
+      }
+
+      window.updateConnected()
+    }
+  }
+
+  def calibrateRobot(): Unit = Future {
+    val control = run(_.control.get)
+    control.calibrateRobot()
+    run(_.updateCalibrationButtons())
+  }
+
+  def measureBoard(): Unit = Future {
+    val control = run(_.control.get)
+    control.measureBoard()
+    run(_.updateMeasureButton())
+  }
+}
 
 class RobotSetupGUIDialog(owner: JFrame) extends JDialog(owner, "Robot setup") with AbstractGUIWindow {
+  var robot: Option[Robot] = None
+  var tracking: Option[(Tracking, Tracking)] = None
+  var control: Option[RobotController] = None
+
+  private val loweredEtched = BorderFactory.createEtchedBorder(EtchedBorder.LOWERED)
+
+  private val robotPanel = new JPanel()
+  robotPanel.setBorder(BorderFactory.createTitledBorder(loweredEtched, "Robot Server"))
+
   {
-    val loweredEtched = BorderFactory.createEtchedBorder(EtchedBorder.LOWERED)
-    
     val labelRobotIp = new JLabel("IP")
-    val inputRobotIp = new JTextField(16)
-    val labelRobotPort = new JLabel("Port")
-    val inputRobotPort = new JTextField(6)
-    val robotConnectButton = new JButton("Connect")
-    val robotPanel = new JPanel()
-    robotPanel.setBorder(BorderFactory.createTitledBorder( loweredEtched, "Robot Server")) 
     robotPanel.add(labelRobotIp)
-    robotPanel.add(inputRobotIp)
+
+    val labelRobotPort = new JLabel("Port")
     robotPanel.add(labelRobotPort)
-    robotPanel.add(inputRobotPort)
-    robotPanel.add(robotConnectButton)
-    
+  }
+
+  val inputRobotIp = new JTextField(16)
+  inputRobotIp.setText("127.0.0.1")
+  robotPanel.add(inputRobotIp)
+
+  val inputRobotPort = new JTextField(6)
+  inputRobotPort.setText("5005")
+  robotPanel.add(inputRobotPort)
+
+  val robotConnectButton = new JButton("Connect")
+  robotPanel.add(robotConnectButton)
+
+  robotConnectButton.addActionListener(new ActionListener {
+    def actionPerformed(e: ActionEvent): Unit = {
+      try {
+        Application.queueEvent(RobotConnectEvent(
+          Host(inputRobotIp.getText, inputRobotPort.getText.toInt)))
+
+        inputRobotIp.setEnabled(false)
+        inputRobotPort.setEnabled(false)
+        robotConnectButton.setEnabled(false)
+      } catch {
+        case _: Exception =>
+      }
+    }
+  })
+
+  private val trackingPanel = new JPanel()
+  trackingPanel.setBorder(BorderFactory.createTitledBorder(loweredEtched, "Tracking Server"))
+
+  {
     val labelTrackingIp = new JLabel("IP")
-    val inputTrackingIp = new JTextField(16)
-    val labelTrackingPort = new JLabel("Port")
-    val inputTrackingPort = new JTextField(6)
-    val robotTrackingButton = new JButton("Connect")
-    val trackingPanel = new JPanel()
-    trackingPanel.setBorder(BorderFactory.createTitledBorder(loweredEtched, "Tracking Server"))
     trackingPanel.add(labelTrackingIp)
-    trackingPanel.add(inputTrackingIp)
+
+    val labelTrackingPort = new JLabel("Port")
     trackingPanel.add(labelTrackingPort)
-    trackingPanel.add(inputTrackingPort)
-    trackingPanel.add(robotTrackingButton)
-    robotTrackingButton.addActionListener(new ActionListener {
-      def actionPerformed(e: ActionEvent): Unit = {
-        // TODO
+  }
+
+  val inputTrackingIp = new JTextField(16)
+  inputTrackingIp.setText("141.83.19.44")
+  trackingPanel.add(inputTrackingIp)
+
+  val inputTrackingPort = new JTextField(6)
+  inputTrackingPort.setText("5000")
+  trackingPanel.add(inputTrackingPort)
+
+  val trackingConnectButton = new JButton("Connect")
+  trackingPanel.add(trackingConnectButton)
+
+  trackingConnectButton.addActionListener(new ActionListener {
+    def actionPerformed(e: ActionEvent): Unit = {
+      try {
+        Application.queueEvent(TrackingConnectEvent(
+          Host(inputTrackingIp.getText, inputTrackingPort.getText.toInt)))
+
+        inputTrackingIp.setEnabled(false)
+        inputTrackingPort.setEnabled(false)
+        trackingConnectButton.setEnabled(false)
+      } catch {
+        case _: Exception =>
       }
-    })
-    
-    val calibrateButton = new JButton("Calibrate Now")
-    val calibrateLoadButton = new JButton("Load From File")
-    val calibrateSaveButton = new JButton("Save To File")
-    val calibrationPanel = new JPanel()
-    calibrationPanel.setBorder(BorderFactory.createTitledBorder(loweredEtched, "Calibration")) 
-    calibrationPanel.add(calibrateButton)
-    calibrationPanel.add(calibrateLoadButton)
-    calibrationPanel.add(calibrateSaveButton)
-    calibrateButton.addActionListener(new ActionListener {
-      def actionPerformed(e: ActionEvent): Unit = {
-        // TODO
-      }
-    })
-    calibrateLoadButton.addActionListener(new ActionListener {
-      def actionPerformed(e: ActionEvent): Unit = {
-        // TODO
-      }
-    })
-    calibrateSaveButton.addActionListener(new ActionListener {
-      def actionPerformed(e: ActionEvent): Unit = {
-        // TODO
-      }
-    })
-    
-    val skipButton = new JButton("Skip Robot Setup")
-    val useButton = new JButton("Use This Robot")
-    val buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT))
-    buttonPanel.add(skipButton);
-    buttonPanel.add(useButton);
-    skipButton.addActionListener(new ActionListener {
-      def actionPerformed(e: ActionEvent): Unit = {
-        Application.queueEvent(RobotSetupEvent(None))
-        dispose()
-      }
-    })
-    useButton.addActionListener(new ActionListener {
-      def actionPerformed(e: ActionEvent): Unit = {
-        // TODO
-        Application.queueEvent(RobotSetupEvent(None))
-        dispose()
-      }
-    })
-    
+    }
+  })
+
+  private val calibrationPanel = new JPanel()
+  calibrationPanel.setBorder(BorderFactory.createTitledBorder(loweredEtched, "Calibration"))
+
+  val calibrateButton = new JButton("Calibrate Now")
+  calibrateButton.setEnabled(false)
+  calibrationPanel.add(calibrateButton)
+
+  val calibrateLoadButton = new JButton("Load From File")
+  calibrateLoadButton.setEnabled(false)
+  calibrationPanel.add(calibrateLoadButton)
+
+  val calibrateSaveButton = new JButton("Save To File")
+  calibrateSaveButton.setEnabled(false)
+  calibrationPanel.add(calibrateSaveButton)
+
+  val measureButton = new JButton("Measure chessboard")
+  measureButton.setEnabled(false)
+  calibrationPanel.add(measureButton)
+
+  private val filename = "calibration.txt"
+
+  calibrateButton.addActionListener(new ActionListener {
+    def actionPerformed(e: ActionEvent): Unit = {
+      calibrateButton.setEnabled(false)
+      calibrateLoadButton.setEnabled(false)
+      calibrateSaveButton.setEnabled(false)
+      updateUseButton()
+
+      Application.queueEvent(CalibrateRobotEvent)
+    }
+  })
+  calibrateLoadButton.addActionListener(new ActionListener {
+    def actionPerformed(e: ActionEvent): Unit = {
+      control.get.calibration = RobotController.loadCalibration(filename)
+      updateCalibrationButtons()
+    }
+  })
+  calibrateSaveButton.addActionListener(new ActionListener {
+    def actionPerformed(e: ActionEvent): Unit = {
+      RobotController.saveCalibration(filename, control.get.calibration.get)
+    }
+  })
+  measureButton.addActionListener(new ActionListener {
+    def actionPerformed(e: ActionEvent): Unit = {
+      measureButton.setEnabled(false)
+      updateUseButton()
+
+      Application.queueEvent(MeasureBoardEvent)
+    }
+  })
+
+  val buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT))
+
+  val skipButton = new JButton("Skip Robot Setup")
+  buttonPanel.add(skipButton)
+
+  val useButton = new JButton("Use This Robot")
+  useButton.setEnabled(false)
+  buttonPanel.add(useButton)
+
+  skipButton.addActionListener(new ActionListener {
+    def actionPerformed(e: ActionEvent): Unit = {
+      Application.queueEvent(RobotSetupEvent(None))
+      dispose()
+    }
+  })
+  useButton.addActionListener(new ActionListener {
+    def actionPerformed(e: ActionEvent): Unit = {
+      Application.queueEvent(RobotSetupEvent(control.map(new RobotView(_))))
+      dispose()
+    }
+  })
+
+  {
     val container = new JPanel()
     container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
     container.add(robotPanel)
     container.add(trackingPanel)
     container.add(calibrationPanel)
-    container.add(buttonPanel);
+    container.add(buttonPanel)
     getContentPane().add(container)
-    
-    pack()
-    setModalityType(ModalityType.APPLICATION_MODAL)
-    setLocationRelativeTo(owner)
-    setVisible(true)
+  }
+
+  pack()
+  setModalityType(ModalityType.APPLICATION_MODAL)
+  setLocationRelativeTo(owner)
+
+  def updateUseButton() {
+    useButton.setEnabled(
+      control.get.calibration.isDefined &&
+        control.get.t_Track_Board.isDefined &&
+        calibrateButton.isEnabled() &&
+        measureButton.isEnabled())
+  }
+
+  def updateCalibrationButtons() {
+    calibrateButton.setEnabled(true)
+    calibrateLoadButton.setEnabled(true)
+    calibrateSaveButton.setEnabled(control.get.calibration.isDefined)
+    updateUseButton()
+  }
+
+  def updateMeasureButton() {
+    measureButton.setEnabled(true)
+    updateUseButton()
+  }
+
+  def updateConnected() {
+    (robot, tracking) match {
+      case (Some(r), Some((tEff, tChess))) =>
+        control = Some(new RobotController(r, tEff, tChess))
+        updateCalibrationButtons()
+        updateMeasureButton()
+
+      case _ =>
+    }
   }
 }

@@ -22,35 +22,27 @@ import robot.types.matToString
 import robot.types.rot
 import robot.types.stringToMat
 
-class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl {
-  private val markerEffector = "Gripper_21012016"
-  private val markerChessboard = "Chessboard"
+class RobotController(robot: Robot, trackingEffector: Tracking, trackingChessboard: Tracking) extends RobotControl {
   private val homePos = List(8.188339, -72.18192, 85.697, 0.085899, 74.57073, -174.2732)
   private val gripperHomePos = 32.5
   private val baseHeight = 150
 
-  private val robot = new Robot(robotHost)
-  private val trackingEffector = Tracking(trackingHost, markerEffector)
-  private val trackingChessboard = Tracking(trackingHost, markerChessboard)
+  var calibration: Option[Calibration] = None
+  var t_Track_Board: Option[Mat] = None
 
   robot.setSpeed(10)
   robot.command("SetAdeptFine 50")
 
-  private val (t_Rob_Track, t_Eff_Mark): (Mat, Mat) = getCalibration(false)
-  // println("done calibrating")
-  // Console.readLine()
-
-  private val t_Track_Board = measureTracker(trackingChessboard) match {
-    case Some(m) => m
-    case None    => throw new RuntimeException("Chessboard not visible")
+  def calibrateRobot() {
+    calibration = Some(getCalibration())
   }
 
-  private val t_Rob_Board = t_Rob_Track * t_Track_Board
-  private val t_Board_Rob = inv(t_Rob_Board)
-  println(t_Board_Rob)
+  def measureBoard() {
+    t_Track_Board = measureTracker(trackingChessboard)
+  }
 
-  println(robot.getPositionHomRowWise())
-  println(t_Board_Rob * robot.getPositionHomRowWise())
+  private def t_Rob_Board = calibration.get.t_Rob_Track * t_Track_Board.get
+  private def t_Board_Rob = inv(t_Rob_Board)
 
   assert(robot.gripperGoHome())
   assert(robot.gripperMoveToPosition(gripperHomePos))
@@ -135,7 +127,7 @@ class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl 
   /** Positions for captured pieces. No bookkeeping is done here. */
   private def getCapturedPosition(idx: Int, color: Color)(height: Double): Mat = {
     val (sx, sy, sz) = (50, 35, -1.0)
-    val dz = 11 
+    val dz = 11
     val d = 100
     val y = color match {
       case Black => -d - (idx / 8) * sx
@@ -174,31 +166,7 @@ class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl 
     Some(mat :/ count.toDouble)
   }
 
-  private def getCalibration(calibrateAnew: Boolean) =
-    if (calibrateAnew) {
-      robot.movePTPJoints(homePos)
-      robot.gripperGoHome
-      val (t_RT, t_EM) = calibrate()
-
-      println(matToString(t_RT))
-      println(matToString(t_EM))
-
-      val file = new File("calibration.txt")
-      val bw = new BufferedWriter(new FileWriter(file))
-      bw.write(matToString(t_RT))
-      bw.newLine()
-      bw.write(matToString(t_EM))
-      bw.close()
-
-      (t_RT, t_EM)
-    } else {
-      val in = Source.fromFile("calibration.txt").getLines().toIndexedSeq
-      val t_RT = stringToMat(in(0))
-      val t_EM = stringToMat(in(0))
-      (t_RT, t_EM)
-    }
-
-  private def calibrate(): (Mat, Mat) = {
+  private def getCalibration(): Calibration = {
     val numMeasurements = 10
     val base = robot.getPositionHomRowWise()
     val status = robot.getStatus()
@@ -244,11 +212,34 @@ class RobotController(robotHost: Host, trackingHost: Host) extends RobotControl 
       }
     }
 
-    Calibration.calibrate(measurements())
+    val ret = Calibration.calibrate(measurements())
+
+    assert(robot.movePTPJoints(homePos))
+
+    ret
   }
 }
 
 object RobotController {
+  def loadCalibration(filename: String): Option[Calibration] = {
+    try {
+      val in = Source.fromFile(filename).getLines().toIndexedSeq
+      val t_RT = stringToMat(in(0))
+      val t_EM = stringToMat(in(0))
+      Some(Calibration(t_RT, t_EM))
+    } catch {
+      case _: Exception => None
+    }
+  }
+
+  def saveCalibration(filename: String, cal: Calibration) {
+    val file = new File(filename)
+    val bw = new BufferedWriter(new FileWriter(file))
+    bw.write(matToString(cal.t_Rob_Track))
+    bw.newLine()
+    bw.write(matToString(cal.t_Eff_Mark))
+    bw.close()
+  }
 
   /** Random point and orientation on sphere defined by radius r. */
   def random(r: Double): Mat = {

@@ -69,6 +69,5 @@ class PlayerSetupGUIDialog(owner: JFrame, gameConfig: (PlayerInfo, PlayerInfo)) 
     pack()
     setModalityType(ModalityType.APPLICATION_MODAL)
     setLocationRelativeTo(owner)
-    setVisible(true)
   }
 }

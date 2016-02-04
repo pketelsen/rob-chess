@@ -368,8 +368,6 @@ class GameGUIFrame extends JFrame("rob-chess") with AbstractGUIWindow {
      * Height: board height + status label height
      */
     setSize(new Dimension(850, 680 + statusLabelHeight))
-
-    setVisible(true)
   }
 
   private def createPromotionButton(piece: Piece): (SVGIcon, SVGIcon, JToggleButton) = {
