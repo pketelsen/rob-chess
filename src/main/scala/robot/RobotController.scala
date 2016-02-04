@@ -24,13 +24,13 @@ import robot.types.stringToMat
 
 class RobotController(robot: Robot, trackingEffector: Tracking, trackingChessboard: Tracking) extends RobotControl {
   private val homePos = List(8.188339, -72.18192, 85.697, 0.085899, 74.57073, -174.2732)
-  private val gripperHomePos = 32.5
+  private val gripperHomePos = 34
   private val baseHeight = 150
 
   var calibration: Option[Calibration] = None
   var t_Track_Board: Option[Mat] = None
 
-  robot.setSpeed(10)
+  robot.setSpeed(15)
   robot.command("SetAdeptFine 50")
 
   def calibrateRobot() {
@@ -99,14 +99,13 @@ class RobotController(robot: Robot, trackingEffector: Tracking, trackingChessboa
   }
 
   private def boardCoordinates(x: Double, y: Double, z: Double) = {
-    //val (dx, dy, dz) = (24, 20.5, -234)
-    val (dx, dy, dz) = (20, 21.5, -228)
+    val (dx, dy, dz) = (20, 23.5, -228)
 
     def c(a: Double): Double = Math.cos(a / 180.0 * Math.PI)
     def s(a: Double): Double = Math.sin(a / 180.0 * Math.PI)
     val corr_ax = 2.1
     val corr_ay = -5
-    val corr_az = 3.1
+    val corr_az = 2.5
     val corr = rot.y(corr_ay) * rot.x(corr_ax) * rot.z(corr_az)
 
     val (xf, yf, zf) = (dx + x, dy + y, dz + z)
@@ -126,9 +125,9 @@ class RobotController(robot: Robot, trackingEffector: Tracking, trackingChessboa
 
   /** Positions for captured pieces. No bookkeeping is done here. */
   private def getCapturedPosition(idx: Int, color: Color)(height: Double): Mat = {
-    val (sx, sy, sz) = (50, 35, -1.0)
+    val (sx, sy, sz) = (50, 40, -1.0)
     val dz = 11
-    val d = 100
+    val d = 90 // distance to board
     val y = color match {
       case Black => -d - (idx / 8) * sx
       case White => 7 * 57.25 + d + (idx / 8) * sx

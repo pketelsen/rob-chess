@@ -18,7 +18,7 @@ object Rook extends Piece {
 }
 
 object Knight extends Piece {
-  def gripHeight = 9
+  def gripHeight = 9.5
   def gripWidth = 23
   override def toString = "Knight"
 }
