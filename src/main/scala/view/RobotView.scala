@@ -77,8 +77,10 @@ class RobotView(rc: RobotControl) extends BoardSubscriber {
               PromoteAction(to, piece._1, piece._2)
           }
         case None => // All positions are occupied, but there's still something wrong
-          val anyEmpty = (allPositions -- boardState.state.keys).head
-          MoveAction(wrong.head._1, anyEmpty)
+          val (pos, _) = wrong.head
+          val nearestEmpty = (allPositions -- boardState.state.keys)
+            .minBy(other => Math.pow(pos.file - other.file, 2) + Math.pow(pos.rank - other.rank, 2))
+          MoveAction(pos, nearestEmpty)
       }
 
       doAction(action)
