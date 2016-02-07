@@ -220,9 +220,9 @@ class RobotController(robot: Robot, trackingEffector: Tracking, trackingChessboa
 }
 
 object RobotController {
-  def loadCalibration(filename: String): Option[Calibration] = {
+  def loadCalibration(file: File): Option[Calibration] = {
     try {
-      val in = Source.fromFile(filename).getLines().toIndexedSeq
+      val in = Source.fromFile(file).getLines().toIndexedSeq
       val t_RT = stringToMat(in(0))
       val t_EM = stringToMat(in(0))
       Some(Calibration(t_RT, t_EM))
@@ -231,8 +231,7 @@ object RobotController {
     }
   }
 
-  def saveCalibration(filename: String, cal: Calibration) {
-    val file = new File(filename)
+  def saveCalibration(file: File, cal: Calibration) {
     val bw = new BufferedWriter(new FileWriter(file))
     bw.write(matToString(cal.t_Rob_Track))
     bw.newLine()

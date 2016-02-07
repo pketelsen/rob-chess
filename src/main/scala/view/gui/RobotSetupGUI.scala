@@ -4,11 +4,14 @@ import java.awt.Dialog.ModalityType
 import java.awt.FlowLayout
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+
 import controller.Application
 import controller.CalibrateRobotEvent
 import controller.Host
+import controller.MeasureBoardEvent
 import controller.RobotConnectEvent
 import controller.RobotConnectedEvent
 import controller.RobotSetupEvent
@@ -18,18 +21,18 @@ import javax.swing.BorderFactory
 import javax.swing.BoxLayout
 import javax.swing.JButton
 import javax.swing.JDialog
+import javax.swing.JFileChooser
 import javax.swing.JFrame
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JTextField
+import javax.swing.border.EmptyBorder
 import javax.swing.border.EtchedBorder
+import javax.swing.filechooser.FileNameExtensionFilter
 import robot.Robot
 import robot.RobotController
 import robot.Tracking
-import controller.MeasureBoardEvent
 import view.RobotView
-import java.awt.Color
-import javax.swing.border.EmptyBorder
 
 class RobotSetupGUI(owner: JFrame) extends AbstractGUI[RobotSetupGUIDialog](new RobotSetupGUIDialog(owner)) {
   def connectRobot(host: Host): Unit = Future {
@@ -206,8 +209,6 @@ class RobotSetupGUIDialog(owner: JFrame) extends JDialog(owner, "Robot setup") w
   measureButton.setEnabled(false)
   calibrationPanel.add(measureButton)
 
-  private val filename = "calibration.txt"
-
   calibrateButton.addActionListener(new ActionListener {
     def actionPerformed(e: ActionEvent): Unit = {
       calibrateButton.setEnabled(false)
@@ -220,13 +221,25 @@ class RobotSetupGUIDialog(owner: JFrame) extends JDialog(owner, "Robot setup") w
   })
   calibrateLoadButton.addActionListener(new ActionListener {
     def actionPerformed(e: ActionEvent): Unit = {
-      control.get.calibration = RobotController.loadCalibration(filename)
-      updateCalibrationButtons()
+      val chooser = new JFileChooser
+      val filter = new FileNameExtensionFilter("Calibration files (.cal)", "cal")
+      chooser.setFileFilter(filter)
+
+      if (chooser.showOpenDialog(RobotSetupGUIDialog.this) == JFileChooser.APPROVE_OPTION) {
+        control.get.calibration = RobotController.loadCalibration(chooser.getSelectedFile)
+        updateCalibrationButtons()
+      }
     }
   })
   calibrateSaveButton.addActionListener(new ActionListener {
     def actionPerformed(e: ActionEvent): Unit = {
-      RobotController.saveCalibration(filename, control.get.calibration.get)
+      val chooser = new JFileChooser
+      val filter = new FileNameExtensionFilter("Calibration files (.cal)", "cal")
+      chooser.setFileFilter(filter)
+
+      if (chooser.showSaveDialog(RobotSetupGUIDialog.this) == JFileChooser.APPROVE_OPTION) {
+        RobotController.saveCalibration(chooser.getSelectedFile, control.get.calibration.get)
+      }
     }
   })
   measureButton.addActionListener(new ActionListener {
