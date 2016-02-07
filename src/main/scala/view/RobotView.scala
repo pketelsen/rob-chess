@@ -1,6 +1,7 @@
 package view
 
-import scala.collection.mutable.ListBuffer
+import scala.annotation.tailrec
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.language.implicitConversions
@@ -11,38 +12,33 @@ import controller.BoardSubscriber
 import controller.CaptureAction
 import controller.MoveAction
 import controller.PromoteAction
-import model.Bishop
 import model.Black
 import model.BoardPos
 import model.Color
-import model.Knight
 import model.Pawn
 import model.Piece
-import model.Queen
-import model.Rook
 import model.White
 import robot.RobotControl
 
 class RobotView(rc: RobotControl) extends BoardSubscriber {
-  private val capturedPieces: Map[(Piece, Color), ListBuffer[Int]] =
-    Map(((Pawn, White) -> new ListBuffer[Int]),
-      ((Rook, White) -> new ListBuffer[Int]),
-      ((Knight, White) -> new ListBuffer[Int]),
-      ((Bishop, White) -> new ListBuffer[Int]),
-      ((Queen, White) -> new ListBuffer[Int]),
-      ((Pawn, Black) -> new ListBuffer[Int]),
-      ((Rook, Black) -> new ListBuffer[Int]),
-      ((Knight, Black) -> new ListBuffer[Int]),
-      ((Bishop, Black) -> new ListBuffer[Int]),
-      ((Queen, Black) -> new ListBuffer[Int]))
+  private val capturedPieces: Map[Color, mutable.Map[Int, Piece]] = Map(White -> mutable.Map(), Black -> mutable.Map())
 
-  class CaptureCounter {
-    private var ctr = 0
-    def inc() = { ctr = ctr + 1; ctr }
-    def reset(): Unit = { ctr = 0 }
-    def get = ctr
+  private def nextCaptureIndex(color: Color): Int = {
+    val map = capturedPieces(color)
+
+    @tailrec
+    def index(i: Int): Int = {
+      if (map.contains(i))
+        return index(i + 1)
+      else
+        return i
+    }
+
+    index(0)
   }
-  private val captureCounters: Map[Color, CaptureCounter] = Map(Black -> { new CaptureCounter }, White -> { new CaptureCounter })
+
+  private def findCapturedPiece(piece: Piece, color: Color): Option[Int] =
+    capturedPieces(color) find (_._2 == piece) map (_._1)
 
   private var boardState: BoardState = BoardState()
 
@@ -91,8 +87,7 @@ class RobotView(rc: RobotControl) extends BoardSubscriber {
 
   def reset(): Future[Unit] = Future {
     setBoard(BoardState())
-    capturedPieces.values.foreach(_.clear())
-    captureCounters.values.foreach(_.reset())
+    assert(capturedPieces.values.forall(_.isEmpty))
   }
 
   private def doAction(action: Action) = {
@@ -104,20 +99,20 @@ class RobotView(rc: RobotControl) extends BoardSubscriber {
 
       case CaptureAction(from) =>
         val Some((piece, color)) = boardState(from)
-        val idx = captureCounters(color).get
+        val idx = nextCaptureIndex(color)
+
         rc.capturePiece(from, idx, color, piece)
-        capturedPieces((piece, color)) += idx
-        captureCounters(color).inc()
+        capturedPieces(color)(idx) = piece
+
         CaptureAction(from)
 
       case PromoteAction(to, promotionPiece, color) => {
-        val (piece, pcs) = capturedPieces((promotionPiece, color)) match {
-          case ListBuffer() => (Pawn, capturedPieces((Pawn, color))) // Fall back to pawn if no matching piece exists
-          case pieces => (promotionPiece, pieces)
+        val (piece, idx) = findCapturedPiece(promotionPiece, color) match {
+          case None => (Pawn, findCapturedPiece(Pawn, color).get) // Fall back to pawn if no matching piece exists
+          case Some(i) => (promotionPiece, i)
         }
 
-        val idx = pcs.head
-        pcs -= idx
+        capturedPieces(color) -= idx
 
         rc.promotePiece(idx, color, to, piece)
         PromoteAction(to, piece, color)
