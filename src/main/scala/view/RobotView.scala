@@ -13,6 +13,7 @@ import controller.MoveAction
 import controller.PromoteAction
 import model.Bishop
 import model.Black
+import model.BoardPos
 import model.Color
 import model.Knight
 import model.Pawn
@@ -52,14 +53,46 @@ class RobotView(rc: RobotControl) extends BoardSubscriber {
     l.foreach(doAction(_))
   }
 
-  def reset(): Future[Unit] = {
-    // TODO Implement
+  private def setBoard(newState: BoardState) {
+    val allPositions: Set[BoardPos] = Set(
+      (0 until 8) flatMap { file =>
+        (0 until 8) map { rank =>
+          BoardPos(file, rank)
+        }
+      }: _*)
 
+    while (boardState != newState) {
+      // Map from empty board positions to pieces supposed to stand there
+      val needed = newState.state -- boardState.state.keys
+
+      // Map from positions to wrongly positioned pieces
+      val wrong = boardState.state filter {
+        case (pos, piece) =>
+          newState(pos) != Some(piece)
+      }
+
+      val action = needed.headOption match {
+        case Some((to, piece)) =>
+          wrong.filter(_._2 == piece).headOption match {
+            case Some((from, _)) => // There's a wrong piece to fill the empty position
+              MoveAction(from, to)
+
+            case None =>
+              PromoteAction(to, piece._1, piece._2)
+          }
+        case None => // All positions are occupied, but there's still something wrong
+          val anyEmpty = (allPositions -- boardState.state.keys).head
+          MoveAction(wrong.head._1, anyEmpty)
+      }
+
+      doAction(action)
+    }
+  }
+
+  def reset(): Future[Unit] = Future {
+    setBoard(BoardState())
     capturedPieces.values.foreach(_.clear())
     captureCounters.values.foreach(_.reset())
-    boardState = BoardState()
-
-    Future.successful(())
   }
 
   private def doAction(action: Action) = {
