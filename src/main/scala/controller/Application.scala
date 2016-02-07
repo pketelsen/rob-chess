@@ -51,12 +51,10 @@ object Application {
         Some(StateRobotSetup(gameGUI, robotSetupGUI))
 
       case (StateRobotSetup(gameGUI, robotSetupGUI), RobotConnectEvent(host)) =>
-        println(s"Connecting to robot $host")
         robotSetupGUI.connectRobot(host)
         Some(state)
 
       case (StateRobotSetup(gameGUI, robotSetupGUI), TrackingConnectEvent(host)) =>
-        println(s"Connecting to tracking $host")
         robotSetupGUI.connectTracking(host)
         Some(state)
 

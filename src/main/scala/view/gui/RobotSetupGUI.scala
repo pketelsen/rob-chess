@@ -28,6 +28,8 @@ import robot.RobotController
 import robot.Tracking
 import controller.MeasureBoardEvent
 import view.RobotView
+import java.awt.Color
+import javax.swing.border.EmptyBorder
 
 class RobotSetupGUI(owner: JFrame) extends AbstractGUI[RobotSetupGUIDialog](new RobotSetupGUIDialog(owner)) {
   def connectRobot(host: Host): Unit = Future {
@@ -62,6 +64,7 @@ class RobotSetupGUI(owner: JFrame) extends AbstractGUI[RobotSetupGUIDialog](new 
       if (robot.isEmpty) {
         window.inputRobotIp.setEnabled(true)
         window.inputRobotPort.setEnabled(true)
+        window.robotConnectButton.setText("Connect")
         window.robotConnectButton.setEnabled(true)
       } else {
         window.robotConnectButton.setText("Connected")
@@ -78,6 +81,7 @@ class RobotSetupGUI(owner: JFrame) extends AbstractGUI[RobotSetupGUIDialog](new 
       if (tracking.isEmpty) {
         window.inputTrackingIp.setEnabled(true)
         window.inputTrackingPort.setEnabled(true)
+        window.trackingConnectButton.setText("Connect")
         window.trackingConnectButton.setEnabled(true)
       } else {
         window.trackingConnectButton.setText("Connected")
@@ -137,6 +141,7 @@ class RobotSetupGUIDialog(owner: JFrame) extends JDialog(owner, "Robot setup") w
 
         inputRobotIp.setEnabled(false)
         inputRobotPort.setEnabled(false)
+        robotConnectButton.setText("Connecting...")
         robotConnectButton.setEnabled(false)
       } catch {
         case _: Exception =>
@@ -174,6 +179,7 @@ class RobotSetupGUIDialog(owner: JFrame) extends JDialog(owner, "Robot setup") w
 
         inputTrackingIp.setEnabled(false)
         inputTrackingPort.setEnabled(false)
+        trackingConnectButton.setText("Connecting...")
         trackingConnectButton.setEnabled(false)
       } catch {
         case _: Exception =>
@@ -232,6 +238,12 @@ class RobotSetupGUIDialog(owner: JFrame) extends JDialog(owner, "Robot setup") w
     }
   })
 
+  private val statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT))
+  statusPanel.setBorder(new EmptyBorder(5, 0, 5, 0))
+
+  private val statusLabel = new JLabel("Please connect to both the robot and the tracking server to enable the robot.")
+  statusPanel.add(statusLabel)
+
   val buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT))
 
   val skipButton = new JButton("Skip Robot Setup")
@@ -255,13 +267,12 @@ class RobotSetupGUIDialog(owner: JFrame) extends JDialog(owner, "Robot setup") w
   })
 
   {
-    val container = new JPanel()
-    container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
-    container.add(robotPanel)
-    container.add(trackingPanel)
-    container.add(calibrationPanel)
-    container.add(buttonPanel)
-    getContentPane().add(container)
+    setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
+    add(robotPanel)
+    add(trackingPanel)
+    add(calibrationPanel)
+    add(statusPanel)
+    add(buttonPanel)
   }
 
   pack()
@@ -274,6 +285,17 @@ class RobotSetupGUIDialog(owner: JFrame) extends JDialog(owner, "Robot setup") w
         control.get.t_Track_Board.isDefined &&
         calibrateButton.isEnabled() &&
         measureButton.isEnabled())
+
+    statusLabel.setText(
+      if (!calibrateButton.isEnabled() || !measureButton.isEnabled())
+        "Please wait..."
+      else if (control.get.calibration.isEmpty)
+        "Please calibrate the robot or load calibration data from a file to enable it."
+      else if (control.get.t_Track_Board.isEmpty)
+        "Please measure the chessboard to enable the robot."
+      else
+        "The robot is ready to use.")
+
   }
 
   def updateCalibrationButtons() {
