@@ -12,6 +12,7 @@ import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.GridLayout
 import java.awt.LayoutManager
+import java.awt.Rectangle
 import java.awt.RenderingHints
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
@@ -38,11 +39,14 @@ import javax.swing.JFrame
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JScrollPane
-import javax.swing.JTextArea
+import javax.swing.JTable
 import javax.swing.JToggleButton
 import javax.swing.ScrollPaneConstants
 import javax.swing.WindowConstants
 import javax.swing.border.EmptyBorder
+import javax.swing.table.AbstractTableModel
+import javax.swing.table.DefaultTableColumnModel
+import javax.swing.table.TableColumn
 import model.Bishop
 import model.Black
 import model.BoardPos
@@ -92,6 +96,8 @@ class GameGUIFrame extends JFrame("rob-chess") with AbstractGUIWindow {
   private var selected: Option[BoardPos] = None
   private val promotion = mutable.Map[Color, Piece](White -> Queen, Black -> Queen)
   private var moveChannel = new Channel[Option[List[Move]]]
+  private val history = Map[Color, mutable.ListBuffer[String]](
+    White -> mutable.ListBuffer[String](), Black -> mutable.ListBuffer[String]())
 
   private var boardState: BoardState = BoardState()
 
@@ -109,7 +115,7 @@ class GameGUIFrame extends JFrame("rob-chess") with AbstractGUIWindow {
     counter = 1
 
     statusLabel.setText(" ")
-    gameHistoryArea.setText("")
+    history.values.foreach(_.clear())
 
     updateBoardState(BoardState())
   }
@@ -259,7 +265,40 @@ class GameGUIFrame extends JFrame("rob-chess") with AbstractGUIWindow {
   private val svg = new SVG()
 
   private val gamePanel = new GamePanel
-  private val gameHistoryArea = new JTextArea
+
+  private val gameHistoryModel = new AbstractTableModel {
+    def getColumnCount = 3
+    def getRowCount = history(White).length
+    def getValueAt(row: Int, col: Int): Object = {
+      col match {
+        case 0 =>
+          s"${row + 1}."
+        case 1 =>
+          history(White)(row)
+        case 2 =>
+          if (history(Black).length > row)
+            history(Black)(row)
+          else
+            ""
+      }
+    }
+  }
+
+  private val gameHistoryTable = new JTable(gameHistoryModel)
+  gameHistoryTable.setTableHeader(null)
+  gameHistoryTable.setShowGrid(false)
+  gameHistoryTable.setFocusable(false)
+  gameHistoryTable.setRowSelectionAllowed(false)
+
+  {
+    val columnModel = new DefaultTableColumnModel
+    columnModel.addColumn(new TableColumn(0, 20))
+    columnModel.addColumn(new TableColumn(1, 50))
+    columnModel.addColumn(new TableColumn(2, 50))
+
+    gameHistoryTable.setColumnModel(columnModel)
+  }
+
   private val statusLabel = new JLabel(" ") // Non-empty content to get correct height
 
   private val (promotionIcons, promotionButtons) = createPromotionButtons()
@@ -274,9 +313,7 @@ class GameGUIFrame extends JFrame("rob-chess") with AbstractGUIWindow {
       }
     })
 
-    gameHistoryArea.setEditable(false)
-
-    val gameHistoryScrollPane = new JScrollPane(gameHistoryArea)
+    val gameHistoryScrollPane = new JScrollPane(gameHistoryTable)
     gameHistoryScrollPane.setVerticalScrollBarPolicy(
       ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS)
 
@@ -442,18 +479,10 @@ class GameGUIFrame extends JFrame("rob-chess") with AbstractGUIWindow {
   }
 
   def addGameHistory(move: String, color: Color): Unit = {
-    if (gameHistoryArea.getText != "" && color == White)
-      gameHistoryArea.append("\n")
-
-    gameHistoryArea.append(
-      color match {
-        case White =>
-          s"${counter}. ${move}"
-
-        case Black =>
-          counter = counter + 1
-          s"\t${move}"
-      })
+    history(color) += move
+    gameHistoryModel.fireTableDataChanged()
+    gameHistoryTable.scrollRectToVisible(new Rectangle(
+      gameHistoryTable.getCellRect(history(White).length - 1, 0, true)))
   }
 
   def getMoveChannel: Channel[Option[List[Move]]] =
