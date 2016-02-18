@@ -15,3 +15,6 @@ lazy val root = (project in file(".")).
     version := "1.0",
     scalaVersion := "2.11.7"
   )
+
+mainClass in assembly := Some("controller.Application")
+assemblyJarName in assembly := "RobChess.jar"
