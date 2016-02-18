@@ -32,6 +32,8 @@ case class Measurement(m: Mat, n: Mat) {
 case class Calibration(t_Rob_Track: Mat, t_Eff_Mark: Mat)
 
 object Calibration {
+
+  /** Computes the calibration for the given measurements. */
   def calibrate(measurements: Seq[Measurement]): Calibration = {
     val A = DenseMatrix.vertcat(measurements map (_.A): _*)
     val b = DenseVector.vertcat(measurements map (_.b): _*)

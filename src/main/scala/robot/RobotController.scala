@@ -165,12 +165,17 @@ class RobotController(robot: Robot, trackingEffector: Tracking, trackingChessboa
     Some(mat :/ count.toDouble)
   }
 
+  /** This is where the calibration happens. */
   private def getCalibration(): Calibration = {
     val numMeasurements = 10
     val base = robot.getPositionHomRowWise()
     val status = robot.getStatus()
     val radius = 150
 
+    /**
+     * Moves the robot to a new random position on the segment of a sphere pointing along the x-axis,
+     *  and then attempts to measure the tracker.
+     */
     def measurement(): Option[Measurement] = {
       val t1 = System.currentTimeMillis()
       println("starting to move...")
@@ -196,6 +201,7 @@ class RobotController(robot: Robot, trackingEffector: Tracking, trackingChessboa
         Measurement(t_Robot_Eff, t_Track_Marker))
     }
 
+    /** Takes measurements until it has 10 and then computes the calibration. */
     @tailrec
     def measurements(l: List[Measurement] = List()): List[Measurement] = {
       if (l.length >= numMeasurements)

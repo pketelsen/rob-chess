@@ -54,6 +54,7 @@ class Game(white: Player, black: Player) {
 
   def AIMove(): Unit = board.AIMove(turn)
 
+  /** Makes the next step in the game, and handles the outcomes. */
   def run(): Unit = Future {
     val (player, opponent) = turn match {
       case White =>
@@ -74,7 +75,7 @@ class Game(white: Player, black: Player) {
     result.foreach {
       _ match {
         case ResultWin(color, message) => Application.showMessage(s"$color wins: $message")
-        case ResultDraw(message) => Application.showMessage(s"Draw: $message")
+        case ResultDraw(message)       => Application.showMessage(s"Draw: $message")
       }
     }
 

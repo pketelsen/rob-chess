@@ -44,6 +44,7 @@ object Application {
     StatePlayerSetup(gameGUI, playerSetupGUI, robot)
   }
 
+  /** Main application loop. Constructs all necessary objects, and handles events. */
   private def handleEvent(state: State, event: ApplicationEvent): Option[State] = {
     (state, event) match {
       case (StateStart(gameGUI), InitEvent) =>
